@@ -63,34 +63,50 @@ Check for these failure modes:
 
 ## Process
 
-### Initial Pass (cheap)
+### Step 0: Foundation Check
+
+Before anything else, ask yourself: **Have I read `concepts/goals.md` in this session?**
+
+- If **yes** (you have clear memory of its contents): proceed to Step 1.
+- If **no** or **unsure**: read `concepts/goals.md` now. Goals are the foundation - everything else exists in service of them.
+
+The framework lives at: `~/claude_docs/epistemic-framework/` (or locate via the symlink at `~/.claude/commands/epistemic.md`).
+
+### Step 1: Initial Review
 
 1. **Read the conversation history** - understand what's been discussed, decided, attempted
-2. **Read relevant files** - look for:
+2. **Read relevant project files** - look for:
    - Plan files (pattern: `*-plan.md`, `*-plan.soma`)
    - Progress logs (pattern: `*-progress.md`, `*-progress.soma`)
    - CLAUDE.md or similar project instructions
-   - Recent code changes if relevant
 3. **Assess each dimension** - be stark, be honest
-4. **Identify questions** - where human input is needed, ask via AskUserQuestion
-5. **Produce recommendations** - strategic and tactical, each with falsification criteria
+4. **Identify gaps** - note where you lack clarity or need human context
 
-### Deeper Analysis (when needed)
+### Step 2: Deepen Where Needed
 
-If any dimension shows ambiguity or you need deeper guidance, read the relevant pillar document before concluding:
+For any dimension where you lack clarity, read the relevant pillar before concluding:
 
-| Dimension | Pillar Document |
-|-----------|-----------------|
-| Terminal/Instrumental Goals | `concepts/goals.md` - the foundation; why are we doing this? |
-| Strategic/Tactical Alignment | `concepts/goals.md` - is there a plan? are tactics serving strategy? |
-| Pathos / Human Intent | `concepts/goals.md` + `concepts/rhetoric.md` - what does the human actually want? |
-| Ethos/Pathos/Logos | `concepts/rhetoric.md` - which mode are we in? Have we asked the human? |
-| Documentation State | `concepts/verification-cycle.md` - are we following the cycle? |
-| Falsifiability Discipline | `concepts/falsifiability.md` - the core principle |
-| Bullshit Check | `concepts/bullshit-detection.md` - are we reporting honestly? |
-| Human-AI Collaboration | `concepts/zero-code-contract.md` - who specifies, who implements? |
+| Dimension | Read |
+|-----------|------|
+| Goals (terminal, instrumental, strategic, tactical) | `concepts/goals.md` |
+| Human intent / Pathos | `concepts/goals.md` then `concepts/rhetoric.md` |
+| Ethos / Logos failures | `concepts/rhetoric.md` |
+| Verification discipline | `concepts/verification-cycle.md` |
+| Falsifiability | `concepts/falsifiability.md` |
+| Honest reporting | `concepts/bullshit-detection.md` |
+| Human-AI roles | `concepts/zero-code-contract.md` |
 
-**Token efficiency**: Only read pillars when the initial pass doesn't resolve. Obvious issues (no plan exists, no tests written) don't need further reading. Nuanced issues (why does the human want this? is this Ethos or Logos?) warrant deeper context.
+**Judgement call**: If the issue is obvious (no plan exists), don't spend tokens reading pillars. If the issue is nuanced (is this Ethos or Logos? why does the human want this?), read for guidance.
+
+This is intelligence, not algorithm. The pillars guide your judgement; they don't replace it.
+
+### Step 3: Ask
+
+Where human input is needed, use AskUserQuestion. Do not guess. Do not proceed on assumption.
+
+### Step 4: Produce Output
+
+Recommendations with falsification criteria. Concise. Readable in under 2 minutes.
 
 ---
 
