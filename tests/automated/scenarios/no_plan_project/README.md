@@ -9,7 +9,6 @@ When /epistemic reviews this project, it should identify:
 1. No plan file exists
 2. No progress log exists
 3. Terminal goal unclear (this README doesn't state one)
-4. No version control (not a git repo)
 
 ## What This Tests
 

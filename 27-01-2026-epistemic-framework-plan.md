@@ -20,18 +20,20 @@
 6. ✓ Install script created
 7. ✓ STYLE.md for voice reference
 8. ✓ Integrate foundation and pillars into `/epistemic` command (hybrid approach: foundation check first, read pillars when ambiguous)
+9. ✓ Testing implemented
+   - `tests/automated/test_install.sh` - verifies symlinks
+   - `tests/automated/test_epistemic_command.sh` - AI evaluator with explicit criteria
+   - `tests/manual/qa_epistemic.md` - human QA script
+   - Both automated tests pass
 
 ## In Progress
 
-9. [ ] Implement testing
-   - Automated: `tests/automated/test_install.sh`
-   - Manual QA: `tests/manual/qa_epistemic.md`
-   - Scenarios for automated reasonableness checks
+10. [ ] GitHub sync (blocked on gh CLI installation)
 
 ## Outstanding
 
-10. [ ] GitHub sync
 11. [ ] Progress log
+12. [ ] `/epistemic-recovery` command - for recovering messy projects
 
 ---
 
