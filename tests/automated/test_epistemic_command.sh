@@ -11,10 +11,12 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 SCENARIO_DIR="$SCRIPT_DIR/scenarios/no_plan_project"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 OUTPUT_FILE="$SCENARIO_DIR/test_output_$TIMESTAMP.txt"
 VERDICT_FILE="$SCENARIO_DIR/test_verdict_$TIMESTAMP.json"
+EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Colours
 RED='\033[0;31m'
@@ -74,63 +76,17 @@ Respond with ONLY valid JSON in this exact format:
 
 EVAL_RESULT=$(echo "$EVAL_PROMPT" | claude -p - --output-format text 2>&1)
 
-# Save eval result to temp file for Python to read
+# Save eval result to temp file for extraction
 EVAL_TEMP=$(mktemp)
 echo "$EVAL_RESULT" > "$EVAL_TEMP"
 
-# Extract JSON from response using Python (handles markdown code blocks, multiline)
-JSON_VERDICT=$(python3 - "$EVAL_TEMP" << 'PYEOF'
-import sys
-import re
-import json
-
-with open(sys.argv[1], 'r') as f:
-    text = f.read()
-
-# Handle markdown code blocks
-text = re.sub(r'```json\s*', '', text)
-text = re.sub(r'```\s*', '', text)
-
-# Find JSON object containing "verdict"
-# First try: simple object without nested braces
-match = re.search(r'\{\s*"verdict"[^}]+\}', text, re.DOTALL)
-if match:
-    try:
-        obj = json.loads(match.group())
-        print(json.dumps(obj))
-        sys.exit(0)
-    except json.JSONDecodeError:
-        pass
-
-# Second try: find balanced braces
-depth = 0
-start = -1
-for i, c in enumerate(text):
-    if c == '{':
-        if depth == 0:
-            start = i
-        depth += 1
-    elif c == '}':
-        depth -= 1
-        if depth == 0 and start >= 0:
-            candidate = text[start:i+1]
-            if '"verdict"' in candidate:
-                try:
-                    obj = json.loads(candidate)
-                    print(json.dumps(obj))
-                    sys.exit(0)
-                except json.JSONDecodeError:
-                    pass
-            start = -1
-
-print('{"error": "no valid JSON found"}')
-sys.exit(1)
-PYEOF
-)
+# Extract JSON from response
+JSON_VERDICT=$("$EXTRACT_JSON" "$EVAL_TEMP")
+EXTRACT_STATUS=$?
 
 rm -f "$EVAL_TEMP"
 
-if [[ -z "$JSON_VERDICT" ]]; then
+if [[ $EXTRACT_STATUS -ne 0 ]] || [[ -z "$JSON_VERDICT" ]]; then
     echo -e "${RED}ERROR${NC}: Could not extract JSON from evaluator response"
     echo "Raw response:"
     echo "$EVAL_RESULT"
