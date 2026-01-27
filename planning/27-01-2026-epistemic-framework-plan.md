@@ -28,12 +28,24 @@
 
 ## In Progress
 
-10. [ ] GitHub sync (blocked on gh CLI installation)
+(None)
 
-## Outstanding
+## Completed (Late Update)
 
-11. [ ] Progress log
-12. [ ] `/epistemic-recovery` command - for recovering messy projects
+10. ✓ GitHub sync (user pushed manually)
+11. ✓ Progress log created
+12. ✓ `/epistemic-discovery` command - read-only archaeology phase
+13. ✓ `/epistemic-recovery` command - step-wise action phase with confirmation
+14. ✓ Tests for discovery/recovery commands
+    - `test_epistemic_discovery.sh` - AI evaluator checks discovery report against ground truth
+    - `test_epistemic_recovery.sh` - AI evaluator checks plan generation quality
+    - `scenarios/messy_project/` - synthetic test scenario with known artefacts
+15. ✓ vLLM discovery prompt template (`tests/manual/vllm_discovery_prompt.md`)
+
+## Next
+
+16. [ ] Run discovery/recovery tests to verify they work
+17. [ ] vLLM discovery session (new Claude Code instance with meta-recording)
 
 ---
 

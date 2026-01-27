@@ -50,3 +50,16 @@ Alex's motivation:
 
 - GitHub sync (blocked on gh CLI installation)
 - `/epistemic-recovery` command for recovering messy projects
+
+### Late Session Update
+
+**Discovery/Recovery Split Implemented**:
+- Recognised that recovery has two distinct phases with different purposes
+- `/epistemic-discovery` - read-only archaeology phase, produces report
+- `/epistemic-recovery` - action phase, step-wise with confirmation at each step
+- Intentional pause between phases: "go think about it"
+
+**GitHub Sync Completed**:
+- gh CLI installed
+- Repo created at github.com/SonicField/epistemic-framework
+- User pushed manually (proxy/permissions resolved on their end)

@@ -19,6 +19,14 @@ Built on the foundation:
 ## Tools
 
 - [/epistemic](claude_tools/epistemic.md) - Systematic review of reasoning quality and goal alignment
+- [/epistemic-discovery](claude_tools/epistemic-discovery.md) - Read-only archaeology for messy projects
+- [/epistemic-recovery](claude_tools/epistemic-recovery.md) - Step-wise restructuring with confirmation
+
+## Planning
+
+Project plans and progress logs live in `planning/`:
+- `<date>-<project>-plan.md` - Terminal goal, completed/outstanding items, decisions
+- `<date>-<project>-progress.md` - Session-by-session record of what was done
 
 ## Installation
 
