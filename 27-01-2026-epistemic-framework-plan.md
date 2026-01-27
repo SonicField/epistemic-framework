@@ -15,38 +15,38 @@
 1. ✓ Project structure created (`concepts/`, `claude_tools/`, `bin/`, `tests/`)
 2. ✓ Git repository initialised
 3. ✓ Foundation document: `goals.md`
-4. ✓ Five pillar documents drafted (Falsifiability confirmed; others need review)
+4. ✓ Five pillar documents drafted and reviewed
 5. ✓ `/epistemic` command created with tiered depth
 6. ✓ Install script created
 7. ✓ STYLE.md for voice reference
+8. ✓ Integrate foundation and pillars into `/epistemic` command (hybrid approach: foundation check first, read pillars when ambiguous)
 
 ## In Progress
 
-8. [ ] Integrate foundation and pillars into `/epistemic` command properly
-   - Currently command has embedded content that should derive from source documents
-   - Need to decide: embed summary? instruct to read? hybrid?
+9. [ ] Implement testing
+   - Automated: `tests/automated/test_install.sh`
+   - Manual QA: `tests/manual/qa_epistemic.md`
+   - Scenarios for automated reasonableness checks
 
 ## Outstanding
 
-9. [ ] Review remaining pillars (Rhetoric, Verification Cycle, Zero-Code Contract, Bullshit Detection)
-10. [ ] Define testing approach for the framework
-11. [ ] GitHub sync
-12. [ ] Progress log
+10. [ ] GitHub sync
+11. [ ] Progress log
 
 ---
 
-## Strategic Decisions Needed
+## Strategic Decisions (Resolved)
 
 ### How should `/epistemic` use the foundation/pillar documents?
-
-Options:
-a) **Embed summaries** - Command contains condensed versions, reads full docs when deeper analysis needed
-b) **Reference only** - Command instructs AI to read docs as first step
-c) **Hybrid** - Command has review dimensions inline, reads docs only for ambiguous cases (current approach)
+**Decision**: Hybrid with foundation priority
+- Step 0: Check if `goals.md` read this session; if not, read it
+- Steps 1-4: Review, deepen with pillars only where clarity lacking
+- Judgement call on when to read - intelligence, not algorithm
 
 ### What does "testing" mean for this framework?
-
-To be discussed with Alex - she has ideas.
+**Decision**: Two categories
+- **Automated**: Install script verification, command invocation, reasonableness checks via second Claude instance
+- **Manual QA**: Human scripts similar to game/VR QA procedures
 
 ---
 
