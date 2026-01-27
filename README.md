@@ -6,6 +6,7 @@ A framework for honest collaboration between humans and AI systems.
 
 - [Overview](docs/overview.md) - Why this exists and how it works
 - [Getting Started](docs/getting-started.md) - Installation and first use
+- [Style Guide](docs/STYLE.md) - Internal reference for AI writing these materials (not for human contributors)
 
 ## Foundation
 
