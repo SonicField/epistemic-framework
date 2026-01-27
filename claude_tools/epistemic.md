@@ -63,6 +63,8 @@ Check for these failure modes:
 
 ## Process
 
+### Initial Pass (cheap)
+
 1. **Read the conversation history** - understand what's been discussed, decided, attempted
 2. **Read relevant files** - look for:
    - Plan files (pattern: `*-plan.md`, `*-plan.soma`)
@@ -72,6 +74,21 @@ Check for these failure modes:
 3. **Assess each dimension** - be stark, be honest
 4. **Identify questions** - where human input is needed, ask via AskUserQuestion
 5. **Produce recommendations** - strategic and tactical, each with falsification criteria
+
+### Deeper Analysis (when needed)
+
+If any dimension shows ambiguity or you need deeper guidance, read the relevant pillar document before concluding:
+
+| Dimension | Pillar Document |
+|-----------|-----------------|
+| Terminal/Instrumental Goals | `concepts/falsifiability.md` - what would prove us wrong? |
+| Ethos/Pathos/Logos | `concepts/rhetoric.md` - which mode are we in? Have we asked the human? |
+| Documentation State | `concepts/verification-cycle.md` - are we following the cycle? |
+| Falsifiability Discipline | `concepts/falsifiability.md` - the core principle |
+| Bullshit Check | `concepts/bullshit-detection.md` - are we reporting honestly? |
+| Human-AI Collaboration | `concepts/zero-code-contract.md` - who specifies, who implements? |
+
+**Token efficiency**: Only read pillars when the initial pass doesn't resolve. Obvious issues (no plan exists, no tests written) don't need further reading. Nuanced issues (why does the human want this? is this Ethos or Logos?) warrant deeper context.
 
 ---
 
