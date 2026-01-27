@@ -2,3 +2,4 @@
 tests/automated/scenarios/*/test_output_*.txt
 tests/automated/scenarios/*/test_verdict_*.json
 tests/automated/*_verdict.json
+tests/automated/*_test_verdict.json

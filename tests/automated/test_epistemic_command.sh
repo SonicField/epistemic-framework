@@ -21,7 +21,6 @@ EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 # Colours
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
 NC='\033[0m'
 
 echo "=== Epistemic Command Test ==="
@@ -31,7 +30,7 @@ echo ""
 
 # Step 1: Run /epistemic in scenario directory
 echo "Step 1: Running /epistemic command..."
-cd "$SCENARIO_DIR"
+cd "$SCENARIO_DIR" || exit 1
 
 claude -p "/epistemic" --output-format text > "$OUTPUT_FILE" 2>&1 || true
 

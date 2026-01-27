@@ -19,6 +19,7 @@ RECOVERY_OUTPUT=$(mktemp)
 EVAL_TEMP=$(mktemp)
 VERDICT_FILE="$SCRIPT_DIR/recovery_test_verdict.json"
 
+# shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {
     rm -f "$RECOVERY_OUTPUT" "$EVAL_TEMP"
 }

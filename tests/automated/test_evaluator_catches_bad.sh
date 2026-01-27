@@ -1,61 +1,48 @@
 #!/bin/bash
-# Test: /epistemic-discovery produces a valid discovery report
+# Test: Evaluator correctly fails on a bad discovery report
 #
-# This test runs /epistemic-discovery on a prepared messy scenario,
-# then uses an AI evaluator to verify the report captures known artefacts.
+# This is a META-TEST: it tests the test infrastructure itself.
+# A bad discovery report (missing artefacts, wrong verdicts) is evaluated.
+# The evaluator should return FAIL.
+# This test passes if the evaluator correctly identifies the bad report.
 #
-# The scenario has a GROUND_TRUTH.md file that the test reads but the
-# discovery command should NOT read.
+# Falsification: If this test passes when fed a bad report, our evaluator
+# is not catching errors and all other tests are suspect.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-SCENARIO_DIR="$SCRIPT_DIR/scenarios/messy_project"
-GROUND_TRUTH="$SCENARIO_DIR/GROUND_TRUTH.md"
+SCENARIO_DIR="$SCRIPT_DIR/scenarios/bad_discovery"
+BAD_REPORT="$SCENARIO_DIR/mock_bad_discovery.md"
 EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Output files
-DISCOVERY_OUTPUT=$(mktemp)
 EVAL_TEMP=$(mktemp)
-VERDICT_FILE="$SCRIPT_DIR/discovery_test_verdict.json"
+VERDICT_FILE="$SCRIPT_DIR/bad_discovery_test_verdict.json"
 
 # shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {
-    rm -f "$DISCOVERY_OUTPUT" "$EVAL_TEMP"
+    rm -f "$EVAL_TEMP"
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic-discovery ==="
-echo "Scenario: $SCENARIO_DIR"
+echo "=== Testing Evaluator Catches Bad Discovery ==="
+echo "Bad report: $BAD_REPORT"
 echo ""
 
-# Step 1: Run discovery on the scenario
-# We simulate human responses by providing them upfront
-echo "Step 1: Running discovery command..."
+# Read the bad discovery report
+BAD_REPORT_CONTENT=$(cat "$BAD_REPORT")
 
-DISCOVERY_PROMPT="Run /epistemic-discovery on this project: $SCENARIO_DIR
+# Use the same ground truth as messy_project
+GROUND_TRUTH_CONTENT="The project contains:
+- loader_v1.py: First attempt, has race condition, BROKEN - should be Discard
+- loader_v2.py: Fixed version with locks, WORKS - should be Keep
+- loader_v3_experimental.py: Lock-free attempt, INCOMPLETE - should be Evaluate
+- benchmark_results.csv: Performance data showing batch_size=32 optimal - should be Keep
+- notes.txt: Design decisions about lock vs lock-free approach"
 
-When asked about context, respond:
-- Terminal goal: Parallelise data loading for a machine learning pipeline
-- Timeframe: January 2024
-- Locations: src/, old/, tests/
-- Valuable outcomes: A working parallel loader
-- Dead ends: First version had a race condition
-
-Produce the discovery report."
-
-DISCOVERY_RESULT=$(echo "$DISCOVERY_PROMPT" | claude -p - --output-format text 2>&1) || true
-echo "$DISCOVERY_RESULT" > "$DISCOVERY_OUTPUT"
-
-echo "Discovery complete. Output saved."
-echo ""
-
-# Step 2: Read ground truth
-GROUND_TRUTH_CONTENT=$(cat "$GROUND_TRUTH")
-
-# Step 3: Evaluate with AI
-echo "Step 2: Evaluating discovery report..."
+echo "Step 1: Running evaluator on bad report..."
 
 EVAL_PROMPT="You are a test evaluator. Compare a discovery report against known ground truth.
 
@@ -63,7 +50,7 @@ EVAL_PROMPT="You are a test evaluator. Compare a discovery report against known 
 $GROUND_TRUTH_CONTENT
 
 ## Discovery Report (what was actually produced)
-$DISCOVERY_RESULT
+$BAD_REPORT_CONTENT
 
 ## Evaluation Criteria
 
@@ -105,7 +92,6 @@ EVAL_RESULT=$(claude -p "$EVAL_TEMP" --output-format text 2>&1) || true
 echo "Evaluation complete."
 echo ""
 
-# Step 4: Extract verdict
 # Write result to temp file for extraction
 echo "$EVAL_RESULT" > "$EVAL_TEMP"
 JSON_VERDICT=$("$EXTRACT_JSON" "$EVAL_TEMP" 2>/dev/null) || JSON_VERDICT=""
@@ -120,29 +106,31 @@ fi
 # Write verdict file
 echo "$JSON_VERDICT" > "$VERDICT_FILE"
 
-# Step 5: Report result
+# Extract the verdict
 VERDICT=$(echo "$JSON_VERDICT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('verdict','UNKNOWN'))")
 
 echo "=== RESULT ==="
-echo "Verdict: $VERDICT"
+echo "Evaluator verdict: $VERDICT"
 echo "Details: $VERDICT_FILE"
 echo ""
 
-if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED"
-    exit 0
-else
-    echo "TEST FAILED"
+# This test PASSES if the evaluator returned FAIL (caught the bad report)
+if [[ "$VERDICT" == "FAIL" ]]; then
+    echo "TEST PASSED: Evaluator correctly identified the bad discovery report"
     echo ""
-    echo "Criteria assessment:"
+    echo "Criteria assessment (all should show issues):"
     echo "$JSON_VERDICT" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 for k, v in data.get('criteria_met', {}).items():
     status = '✓' if v else '✗'
     print(f'  {status} {k}')
-print()
-print('Reasoning:', data.get('reasoning', 'none'))
 "
+    exit 0
+else
+    echo "TEST FAILED: Evaluator did not catch the bad discovery report"
+    echo ""
+    echo "This means our test infrastructure is broken - it's not catching errors."
+    echo "All other test results are suspect."
     exit 1
 fi
