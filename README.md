@@ -8,6 +8,10 @@ A framework for honest collaboration between humans and AI systems.
 - [Getting Started](docs/getting-started.md) - Installation and first use
 - [Style Guide](docs/STYLE.md) - Internal reference for AI writing these materials (not for human contributors)
 
+## Examples
+
+- [CLAUDE.md](examples/CLAUDE.md) - Example project configuration for epistemic programming
+
 ## Foundation
 
 - [Goals](concepts/goals.md) - The why. Everything else exists in service of this.
