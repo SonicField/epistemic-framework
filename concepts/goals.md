@@ -10,7 +10,7 @@ A **terminal goal** is what we actually want. An **instrumental goal** is a step
 
 Confusion between the two is the root of most project failure. We optimise an instrumental goal until it consumes all resources, forgetting it was supposed to serve something larger. The test suite passes, but the product is useless. The architecture is elegant, but it solves the wrong problem.
 
-The question is always: what is this in service of?
+The question is always: what does this serve?
 
 ## Strategic and Tactical
 
