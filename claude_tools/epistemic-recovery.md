@@ -1,145 +1,175 @@
 ---
-description: Collaborative recovery of projects that lack epistemic structure
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(find:*), Bash(ls:*), Bash(git log:*)
+description: Step-wise recovery of projects based on discovery report
+allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(git:*)
 ---
 
 # Epistemic Recovery
 
-You are conducting an **epistemic recovery** - a collaborative process to recover a project that was developed without epistemic discipline, or has drifted into disorder, without losing its valuable outcomes.
+You are conducting an **epistemic recovery** - the action phase that follows `/epistemic-discovery`. This command restructures, consolidates, and establishes epistemic discipline for a project.
 
-This is **archaeology with a living witness**. The human has context you cannot infer. Ask constantly. Confirm before concluding.
+**Prerequisites**: A discovery report should exist from a prior `/epistemic-discovery` run. If not, ask the human if they want to proceed anyway or run discovery first.
 
-## The Problem
+---
 
-Projects developed without epistemic structure accumulate:
-- Scattered artefacts across multiple locations
-- Undocumented decisions and their rationale
-- Results whose value is unclear
-- Dead ends mixed with genuine progress
-- Implicit goals never written down
+## The Goal
 
-The goal is to recover the valuable outcomes and establish epistemic structure going forward.
+The terminal goal is: **valuable outcomes preserved, verified, and usable**.
+
+The discovery report identified what's worth keeping. This command:
+1. Creates a step-wise recovery plan
+2. Executes each step with human confirmation
+3. Preserves originals until success is verified
+4. Establishes epistemic structure going forward
 
 ---
 
 ## Process
 
-### Phase 1: Establish Context
+### Phase 1: Load Discovery
 
-Before searching for anything, understand what you're recovering.
+Find and read the discovery report.
 
 **Ask the human:**
-- What was this project trying to achieve? (Terminal goal, even if never written)
-- What timeframe did the work span?
-- What locations might contain related artefacts?
-- What are the valuable outcomes you want to preserve?
-- What do you remember about dead ends or false starts?
+- Where is the discovery report? (or: should we proceed without one?)
+- Has anything changed since discovery?
+- Any decisions you've reconsidered?
 
-**Do not proceed until you have answers.** The human's memory is the primary source of truth.
+If no discovery report exists, offer to run a quick discovery first or proceed with human-guided recovery.
 
-### Phase 2: Archaeology
+### Phase 2: Create Recovery Plan
 
-Search for artefacts systematically. For each location the human suggests:
+Based on discovery, create a step-wise plan. Each step must be:
 
-1. **List what exists** - file names, directories, dates
-2. **Present findings to human** - "I found these files. Which are relevant?"
-3. **Read only what human confirms** - don't waste tokens on dead ends
-4. **Build a map** - track what's where and what it contains
-
-**Checkpoint after each location**: Confirm understanding before moving on.
-
-### Phase 3: Triage
-
-For each artefact found, **ask the human**:
-
-| Question | Why |
+| Property | Why |
 |----------|-----|
-| What was this trying to do? | Context the file can't provide |
-| Did it work? | Only the human knows |
-| Is this a result (keep), false start (discard), or partial (evaluate)? | Human decides value |
-| What does this prove or disprove? | Interpret with human guidance |
+| **Atomic** | One action per step |
+| **Reversible** | Can undo if wrong |
+| **Described** | Human knows what will happen |
+| **Ordered** | Dependencies respected |
 
-**Build a triage table** together:
+**Plan format:**
 
 ```markdown
-| Artefact | Purpose | Status | Action |
-|----------|---------|--------|--------|
-| file.py | Parallel depickling | Works, verified | Keep - core result |
-| test_v2.py | Alternative approach | Failed | Discard - document why |
-| notes.md | Design thinking | Partial | Extract key decisions |
+# Recovery Plan: [Project Name]
+
+**Based on**: [discovery report path]
+**Date**: [date]
+
+## Steps
+
+### Step 1: [Action]
+- **What**: [precise description]
+- **Why**: [rationale from discovery]
+- **Reversible**: [how to undo]
+- **Status**: Pending
+
+### Step 2: [Action]
+...
 ```
 
-### Phase 4: Reconstruction
+**Present plan to human for approval before any execution.**
 
-With the human's guidance, consolidate into proper structure:
+### Phase 3: Execute with Confirmation
 
-1. **State the terminal goal** (now, with hindsight and human confirmation)
-2. **Document the valuable outcomes** - what was achieved, with evidence
-3. **Create recovery plan** - `<date>-<project>-recovery-plan.md`
-4. **Propose directory structure** - get human approval before moving anything
+For each step:
 
-**Ask before restructuring:**
-- "I propose moving X to Y because Z. Agree?"
-- "Should we consolidate these files or keep them separate?"
-- "What naming convention fits your workflow?"
+1. **Show the step**: What will happen, why, how to undo
+2. **Ask for confirmation**: "Proceed with step N? [yes/skip/abort]"
+3. **Execute if confirmed**
+4. **Report result**: What happened, any issues
+5. **Update plan**: Mark step complete or note issues
 
-### Phase 5: Establish Falsification
+**If any step fails:**
+- Stop execution
+- Report what went wrong
+- Ask human how to proceed (retry/skip/abort/rollback)
 
-For each recovered result, work with the human to determine:
+### Phase 4: Establish Structure
 
-1. **What would prove this wrong?** - falsification criteria
-2. **Can we reproduce it?** - test if possible
-3. **What evidence exists?** - document the chain
-4. **What's still uncertain?** - honest about gaps
+After restructuring, establish epistemic discipline:
+
+1. **Create plan file**: `<date>-<project>-plan.md` with terminal goal and next steps
+2. **Create progress log**: `<date>-<project>-progress.md` documenting recovery
+3. **Initialise version control**: If not already under git
+4. **Document falsification criteria**: For each preserved result
+
+### Phase 5: Verify
+
+Before declaring success:
+
+1. **Check preserved artefacts**: Are they intact and accessible?
+2. **Test reproducibility**: Can key results be reproduced?
+3. **Confirm with human**: Does this match what you expected?
 
 ---
 
-## Output Format
+## Recovery Actions
 
-As you work, maintain a recovery log:
+Common actions the plan might include:
+
+| Action | Description |
+|--------|-------------|
+| `create_directory` | Create new directory structure |
+| `move_file` | Move file to new location (preserve original until verified) |
+| `consolidate` | Merge multiple files into one |
+| `extract` | Pull relevant sections from a larger file |
+| `archive` | Move to archive location (don't delete) |
+| `document` | Create documentation for undocumented work |
+| `git_init` | Initialise version control |
+| `git_commit` | Commit current state |
+
+**Never delete without explicit human approval.** Archive instead.
+
+---
+
+## Output
+
+At the end of recovery, produce:
+
+1. **Restructured project** in agreed location
+2. **Recovery log** documenting what was done
+3. **Plan file** for future work
+4. **Progress file** capturing this session
 
 ```markdown
 # Recovery Log: [Project Name]
 
-## Terminal Goal (Reconstructed)
-[One sentence, confirmed by human]
+**Date**: [date]
+**Discovery Report**: [path]
 
-## Artefacts Found
-[Location → What's there → Status]
+## Actions Taken
 
-## Triage Decisions
-[Table of keep/discard/evaluate with rationale]
+| Step | Action | Result |
+|------|--------|--------|
+| 1 | [what] | [success/skipped/failed] |
+| 2 | [what] | [result] |
 
-## Valuable Outcomes
-[What was achieved, with evidence]
-
-## Reconstruction Actions
-[What was moved, consolidated, structured]
-
-## Open Questions
-[What remains uncertain]
+## Final Structure
+[Tree or description of resulting project layout]
 
 ## Falsification Status
-[For each result: criteria, evidence, gaps]
+[For each preserved result: criteria, evidence, gaps]
+
+## Next Steps
+[What remains to be done]
 ```
 
 ---
 
 ## Rules
 
-- **Ask constantly**. The human is the primary source of truth.
-- **Confirm before acting**. Don't move files, discard artefacts, or conclude without approval.
-- **Show your work**. Present findings, let human interpret.
-- **Admit uncertainty**. "I don't know what this is for" is valid - ask.
-- **Preserve before restructuring**. If in doubt, keep the original.
-- **Document decisions**. Every triage choice needs rationale.
+- **Confirm every step**. No bulk changes without per-step approval.
+- **Preserve before moving**. Copy first, delete original only after verification.
+- **Never delete without explicit approval**. Archive instead.
+- **Report honestly**. If something fails, say so.
+- **Stop on unexpected issues**. Don't power through problems.
 
 ---
 
 ## The Contract
 
-You are the archaeologist. The human is the witness who lived through it.
+You are the builder. The human is the architect reviewing each brick.
 
-Neither can do this alone. You find artefacts and propose structure. They provide meaning and make decisions. Together you recover what's valuable without losing it.
+The discovery phase found what's valuable. Now you restructure it - carefully, reversibly, with confirmation at every step. The human's approval is required before each action.
 
-_Ask early. Ask often. The human knows things the files cannot tell you._
+_Move slowly. Confirm constantly. Preserving work is the goal._
