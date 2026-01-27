@@ -2,6 +2,11 @@
 
 A framework for honest collaboration between humans and AI systems.
 
+## Documentation
+
+- [Overview](docs/overview.md) - Why this exists and how it works
+- [Getting Started](docs/getting-started.md) - Installation and first use
+
 ## Foundation
 
 - [Goals](concepts/goals.md) - The why. Everything else exists in service of this.
@@ -39,3 +44,7 @@ This creates symlinks in `~/.claude/commands/` for all Claude Code tools.
 ## Author
 
 Dr Alex Turner
+
+## Licence
+
+[MIT](LICENSE)
