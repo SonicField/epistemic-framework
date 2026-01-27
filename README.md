@@ -2,7 +2,13 @@
 
 A framework for honest collaboration between humans and AI systems.
 
+## Foundation
+
+- [Goals](concepts/goals.md) - The why. Everything else exists in service of this.
+
 ## Pillars
+
+Built on the foundation:
 
 - [Falsifiability](concepts/falsifiability.md) - Claims require potential falsifiers
 - [Rhetoric](concepts/rhetoric.md) - Ethos, Pathos, Logos and knowing when to ask

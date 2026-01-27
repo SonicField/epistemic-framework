@@ -81,7 +81,9 @@ If any dimension shows ambiguity or you need deeper guidance, read the relevant 
 
 | Dimension | Pillar Document |
 |-----------|-----------------|
-| Terminal/Instrumental Goals | `concepts/falsifiability.md` - what would prove us wrong? |
+| Terminal/Instrumental Goals | `concepts/goals.md` - the foundation; why are we doing this? |
+| Strategic/Tactical Alignment | `concepts/goals.md` - is there a plan? are tactics serving strategy? |
+| Pathos / Human Intent | `concepts/goals.md` + `concepts/rhetoric.md` - what does the human actually want? |
 | Ethos/Pathos/Logos | `concepts/rhetoric.md` - which mode are we in? Have we asked the human? |
 | Documentation State | `concepts/verification-cycle.md` - are we following the cycle? |
 | Falsifiability Discipline | `concepts/falsifiability.md` - the core principle |
