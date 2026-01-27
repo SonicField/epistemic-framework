@@ -63,3 +63,38 @@ Alex's motivation:
 - gh CLI installed
 - Repo created at github.com/SonicField/epistemic-framework
 - User pushed manually (proxy/permissions resolved on their end)
+
+### Continued Session
+
+**Testing Expanded**:
+- `test_epistemic_discovery.sh` - evaluates discovery reports against ground truth
+- `test_epistemic_recovery.sh` - evaluates recovery plan generation
+- `test_evaluator_catches_bad.sh` - meta-test verifying evaluator catches errors
+- `scenarios/messy_project/` - synthetic scenario with known artefacts
+- `scenarios/bad_discovery/` - deliberately bad report for should-fail test
+- Shellcheck fixes applied to all scripts
+
+**Documentation Added**:
+- LICENSE (MIT)
+- CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md
+- docs/overview.md - why this exists
+- docs/getting-started.md - installation and usage
+- STYLE.md moved to docs/
+
+**Examples**:
+- examples/CLAUDE.md - distilled epistemic programming config, environment-agnostic
+
+**Project Structure Reorganised**:
+- planning/ directory for plan and progress files
+- README updated with all sections
+
+### What Was Learned
+
+- Shellcheck catches real issues (missing `|| exit` on cd)
+- SC2317 false positive for trap cleanup functions - needs disable directive
+- Should-fail tests are essential - they validate the test infrastructure itself
+- The evaluator correctly catches: missing artefacts, wrong verdicts, missing questions
+
+### Remaining
+
+- vLLM discovery session (real-world validation)

@@ -44,8 +44,17 @@
 
 ## Next
 
-16. [ ] Run discovery/recovery tests to verify they work
-17. [ ] vLLM discovery session (new Claude Code instance with meta-recording)
+16. ✓ Run discovery/recovery tests to verify they work (all pass)
+17. ✓ Shellcheck fixes applied to all test scripts
+18. ✓ Should-fail test added (`test_evaluator_catches_bad.sh`)
+19. ✓ Documentation: LICENSE, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY
+20. ✓ docs/overview.md, docs/getting-started.md
+21. ✓ examples/CLAUDE.md - distilled epistemic programming config
+22. ✓ STYLE.md moved to docs/
+
+## Remaining
+
+23. [ ] vLLM discovery session (real-world validation with meta-recording)
 
 ---
 
