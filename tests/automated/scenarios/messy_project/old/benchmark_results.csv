@@ -1,0 +1,8 @@
+batch_size,thread_count,time_seconds,notes
+16,4,3.2,baseline
+32,4,2.1,optimal batch size
+64,4,2.3,slight degradation
+128,4,2.8,memory pressure?
+32,2,3.1,underutilised
+32,8,2.0,minimal improvement over 4
+32,4,2.1,confirmed optimal

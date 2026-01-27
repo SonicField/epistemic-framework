@@ -1,0 +1,27 @@
+Design notes - parallel data loading
+=====================================
+
+2024-01-15: Started thinking about this. The bottleneck is I/O,
+so parallelism should help.
+
+2024-01-18: First attempt didn't work - race condition.
+See loader_v1.py. Need to protect shared state.
+
+2024-01-19: Options considered:
+  1. Lock around the list - simple, might have contention
+  2. Thread-local storage - complex
+  3. Lock-free queue - interesting but more work
+
+Going with option 1 for now. Can revisit if performance is bad.
+
+2024-01-22: Lock-based version (v2) works. Benchmarked different
+batch sizes:
+  - 16: 3.2s
+  - 32: 2.1s  <-- sweet spot
+  - 64: 2.3s
+  - 128: 2.8s
+
+Thread count matched to CPU cores (4) after testing.
+
+2024-01-25: Started playing with lock-free version (v3).
+Not sure if worth finishing. v2 is good enough?
