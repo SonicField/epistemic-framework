@@ -1,17 +1,20 @@
 #!/bin/bash
-# Test: Verify /epistemic command produces expected output on known scenario
+# Test: Verify /epistemic command via AI evaluation
 #
-# Runs /epistemic on a test project with known issues, checks output contains
-# expected elements.
+# 1. Runs /epistemic on test scenario
+# 2. Evaluator AI judges output against explicit criteria
+# 3. Produces deterministic verdict file (state of truth)
+# 4. Exit code based on verdict
 #
-# Falsification: Exits 0 if output mentions expected issues, non-zero otherwise
+# Falsification: Test fails if evaluator determines output missed known issues
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCENARIO_DIR="$SCRIPT_DIR/scenarios/no_plan_project"
-OUTPUT_FILE=$(mktemp)
-EVAL_FILE=$(mktemp)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+OUTPUT_FILE="$SCENARIO_DIR/test_output_$TIMESTAMP.txt"
+VERDICT_FILE="$SCENARIO_DIR/test_verdict_$TIMESTAMP.json"
 
 # Colours
 RED='\033[0;31m'
@@ -19,101 +22,88 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-cleanup() {
-    rm -f "$OUTPUT_FILE" "$EVAL_FILE"
-}
-trap cleanup EXIT
-
-echo "Testing /epistemic command on scenario: no_plan_project"
-echo "Scenario dir: $SCENARIO_DIR"
-echo "Output file: $OUTPUT_FILE"
+echo "=== Epistemic Command Test ==="
+echo "Scenario: no_plan_project"
+echo "Timestamp: $TIMESTAMP"
 echo ""
 
-# Run epistemic command in the scenario directory
-echo "Running /epistemic command..."
+# Step 1: Run /epistemic in scenario directory
+echo "Step 1: Running /epistemic command..."
 cd "$SCENARIO_DIR"
 
-# Use claude -p to run the command non-interactively
-# The --dangerously-skip-permissions flag may be needed for CI
-claude -p "/epistemic" --output-format text > "$OUTPUT_FILE" 2>&1
+claude -p "/epistemic" --output-format text > "$OUTPUT_FILE" 2>&1 || true
 
-if [[ $? -ne 0 ]]; then
-    echo -e "${YELLOW}WARN${NC}: claude command returned non-zero (may be normal)"
-fi
-
-echo "Command completed. Output length: $(wc -c < "$OUTPUT_FILE") bytes"
+echo "Output captured: $OUTPUT_FILE ($(wc -l < "$OUTPUT_FILE") lines)"
 echo ""
 
-# Check for expected patterns in output
-FAILED=0
+# Step 2: Read criteria and evaluate
+echo "Step 2: Evaluating output against criteria..."
 
-check_pattern() {
-    local pattern="$1"
-    local description="$2"
+CRITERIA=$(cat "$SCENARIO_DIR/TEST_CRITERIA.md")
+OUTPUT=$(cat "$OUTPUT_FILE")
 
-    if grep -qi "$pattern" "$OUTPUT_FILE"; then
-        echo -e "${GREEN}PASS${NC}: Output mentions $description"
-    else
-        echo -e "${RED}FAIL${NC}: Output missing $description"
-        FAILED=1
-    fi
-}
+EVAL_PROMPT="You are a test evaluator. Your job is to determine whether an epistemic review tool produced correct output for a known test scenario.
 
-echo "Checking for expected issues in output..."
-check_pattern "plan" "missing plan"
-check_pattern "goal" "goals (terminal or unclear)"
-check_pattern "Status\|Issues\|Recommend" "required output sections"
+## Test Criteria
+$CRITERIA
 
-echo ""
-
-# Optional: Have another Claude instance evaluate the output
-echo "Running reasonableness check..."
-
-EVAL_PROMPT="You are evaluating the output of an epistemic review tool.
-
-The tool was run on a test project that has these known issues:
-1. No plan file
-2. No progress log
-3. Unclear terminal goal
-4. No version control
-
-Here is the tool's output:
+## Tool Output To Evaluate
 ---
-$(cat "$OUTPUT_FILE")
+$OUTPUT
 ---
 
-Answer these questions with YES or NO only:
-1. Does the output identify the lack of a plan?
-2. Does the output mention goals or ask about them?
-3. Is the output concise (under 50 lines)?
-4. Does it include recommendations?
+## Your Task
 
-Then give an overall PASS or FAIL."
+Evaluate the output and produce a JSON verdict. Be strict but fair.
 
-echo "$EVAL_PROMPT" | claude -p - --output-format text > "$EVAL_FILE" 2>&1
+Respond with ONLY valid JSON in this exact format:
+{
+  \"verdict\": \"PASS\" or \"FAIL\",
+  \"identified_issues\": {
+    \"no_plan\": true/false,
+    \"no_progress_log\": true/false,
+    \"unclear_goals\": true/false,
+    \"has_recommendations\": true/false
+  },
+  \"issues_found\": <number 0-4>,
+  \"is_concise\": true/false,
+  \"has_structure\": true/false,
+  \"hallucinations\": true/false,
+  \"reasoning\": \"<one sentence explaining verdict>\"
+}"
 
-echo "Evaluation result:"
-cat "$EVAL_FILE"
-echo ""
+EVAL_RESULT=$(echo "$EVAL_PROMPT" | claude -p - --output-format text 2>&1)
 
-# Check if evaluation contains PASS
-if grep -qi "overall.*pass\|PASS" "$EVAL_FILE"; then
-    echo -e "${GREEN}Reasonableness check: PASS${NC}"
-else
-    echo -e "${RED}Reasonableness check: FAIL or unclear${NC}"
-    FAILED=1
+# Extract JSON from response (handle markdown code blocks)
+JSON_VERDICT=$(echo "$EVAL_RESULT" | grep -Pzo '\{[\s\S]*\}' | tr -d '\0' | head -1)
+
+if [[ -z "$JSON_VERDICT" ]]; then
+    echo -e "${RED}ERROR${NC}: Could not extract JSON from evaluator response"
+    echo "Raw response:"
+    echo "$EVAL_RESULT"
+    exit 2
 fi
 
+# Write verdict file (state of truth)
+echo "$JSON_VERDICT" > "$VERDICT_FILE"
+echo "Verdict written: $VERDICT_FILE"
 echo ""
-if [[ $FAILED -eq 0 ]]; then
-    echo -e "${GREEN}All checks passed${NC}"
+
+# Step 3: Parse verdict and report
+echo "Step 3: Verdict"
+echo "---"
+echo "$JSON_VERDICT" | python3 -m json.tool 2>/dev/null || echo "$JSON_VERDICT"
+echo "---"
+echo ""
+
+# Extract pass/fail
+if echo "$JSON_VERDICT" | grep -q '"verdict".*"PASS"'; then
+    echo -e "${GREEN}TEST PASSED${NC}"
     exit 0
 else
-    echo -e "${RED}Some checks failed${NC}"
+    echo -e "${RED}TEST FAILED${NC}"
     echo ""
-    echo "Full output was:"
-    echo "---"
-    cat "$OUTPUT_FILE"
-    echo "---"
+    echo "Output was:"
+    head -50 "$OUTPUT_FILE"
     exit 1
 fi

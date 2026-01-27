@@ -1,0 +1,3 @@
+# Test outputs (timestamped, not committed)
+tests/automated/scenarios/*/test_output_*.txt
+tests/automated/scenarios/*/test_verdict_*.json
