@@ -9,6 +9,30 @@ You are conducting an **epistemic review** - a systematic audit of reasoning qua
 
 You have access to the full conversation history. Use it.
 
+---
+
+## Step 0: Context Detection and Dispatch
+
+Before proceeding, examine the conversation history to determine what command was invoked this session:
+
+### If you executed `/epistemic-discovery` this session
+
+Evidence: You performed Phases 1-4 (Establish Context, Archaeology, Triage, Gap Analysis) and produced a discovery report.
+
+→ **Dispatch**: Read `~/.claude/commands/epistemic-discovery-verify.md` and apply it instead of continuing here. That command verifies discovery report completeness before recovery.
+
+### If you executed `/epistemic-recovery` this session
+
+Evidence: You read a discovery report and created or executed a recovery plan.
+
+→ **Continue below**: Apply normal epistemic review to the recovery work. (Future: may dispatch to recovery-specific verification)
+
+### If neither command was invoked this session
+
+→ **Continue below**: Apply normal epistemic review.
+
+---
+
 ## Your Task
 
 Produce a **concise, human-readable** review (readable in under 2 minutes) that surfaces drift, bullshit, and blind spots before they compound.
@@ -63,16 +87,16 @@ Check for these failure modes:
 
 ## Process
 
-### Step 0: Foundation Check
+### Step 1: Foundation Check
 
 Before anything else, ask yourself: **Have I read `concepts/goals.md` in this session?**
 
-- If **yes** (you have clear memory of its contents): proceed to Step 1.
+- If **yes** (you have clear memory of its contents): proceed to Step 2.
 - If **no** or **unsure**: read `concepts/goals.md` now. Goals are the foundation - everything else exists in service of them.
 
 The framework lives at: `~/claude_docs/epistemic-framework/` (or locate via the symlink at `~/.claude/commands/epistemic.md`).
 
-### Step 1: Initial Review
+### Step 2: Initial Review
 
 1. **Read the conversation history** - understand what's been discussed, decided, attempted
 2. **Read relevant project files** - look for:
@@ -82,7 +106,7 @@ The framework lives at: `~/claude_docs/epistemic-framework/` (or locate via the 
 3. **Assess each dimension** - be stark, be honest
 4. **Identify gaps** - note where you lack clarity or need human context
 
-### Step 2: Deepen Where Needed
+### Step 3: Deepen Where Needed
 
 For any dimension where you lack clarity, read the relevant pillar before concluding:
 
@@ -100,11 +124,11 @@ For any dimension where you lack clarity, read the relevant pillar before conclu
 
 This is intelligence, not algorithm. The pillars guide your judgement; they don't replace it.
 
-### Step 3: Ask
+### Step 4: Ask
 
 Where human input is needed, use AskUserQuestion. Do not guess. Do not proceed on assumption.
 
-### Step 4: Produce Output
+### Step 5: Produce Output
 
 Recommendations with falsification criteria. Concise. Readable in under 2 minutes.
 
