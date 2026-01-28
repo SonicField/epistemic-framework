@@ -26,8 +26,8 @@ tests/
 │   │   ├── messy_project/      # Scattered artefacts for discovery
 │   │   ├── post_discovery/     # Valid discovery report for dispatch testing
 │   │   └── bad_discovery/      # Deliberately bad report (should-fail test)
-│   ├── test_*.sh        # Test scripts
-│   └── *_verdict.json   # Verdict files (state of truth)
+│   ├── verdicts/        # Generated test outputs (git-ignored)
+│   └── test_*.sh        # Test scripts
 └── manual/              # Human-executed QA procedures
     ├── qa_epistemic.md  # QA script for /epistemic command
     └── qa_discovery.md  # QA script for /epistemic-discovery
@@ -83,12 +83,28 @@ cd tests/automated
 
 ### Verdict Files
 
-Each test produces a `*_verdict.json` file containing:
-- `verdict`: PASS or FAIL
-- Criteria-specific assessments
-- `reasoning`: Evaluator's explanation
+Tests write output to `verdicts/` subdirectory:
 
-These are the state of truth. The exit code is derived from the verdict.
+| File | Contents |
+|------|----------|
+| `*_verdict.json` | Evaluator judgement (PASS/FAIL with reasoning) |
+| `*_output.txt` | Raw command output for debugging |
+
+**Why a separate directory?**
+- Tests need a writable location with predictable permissions
+- Keeping generated files separate from scenarios avoids confusion
+- All files in `verdicts/` are git-ignored (only the README is tracked)
+
+**Structure of a verdict file:**
+```json
+{
+  "verdict": "PASS",
+  "criteria_met": { ... },
+  "reasoning": "Brief explanation"
+}
+```
+
+The exit code is derived from the verdict. These files persist for debugging failed tests.
 
 ---
 

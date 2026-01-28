@@ -18,7 +18,7 @@ EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 # Output files
 DISCOVERY_OUTPUT=$(mktemp)
 EVAL_TEMP=$(mktemp)
-VERDICT_FILE="$SCRIPT_DIR/discovery_test_verdict.json"
+VERDICT_FILE="$SCRIPT_DIR/verdicts/discovery_test_verdict.json"
 
 # shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {

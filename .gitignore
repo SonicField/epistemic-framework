@@ -1,4 +1,11 @@
-# Test outputs (timestamped, not committed)
+# Test outputs - generated files, not committed
+# See tests/README.md for explanation
+
+# Verdict files (evaluator judgements)
+tests/automated/verdicts/*.json
+tests/automated/verdicts/*.txt
+
+# Legacy patterns (before verdicts/ subdirectory)
 tests/automated/scenarios/*/test_output_*.txt
 tests/automated/scenarios/*/test_verdict_*.json
 tests/automated/*_verdict.json

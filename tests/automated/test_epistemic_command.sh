@@ -14,8 +14,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 SCENARIO_DIR="$SCRIPT_DIR/scenarios/no_plan_project"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_FILE="$SCENARIO_DIR/test_output_$TIMESTAMP.txt"
-VERDICT_FILE="$SCENARIO_DIR/test_verdict_$TIMESTAMP.json"
+OUTPUT_FILE="$SCRIPT_DIR/verdicts/epistemic_output_$TIMESTAMP.txt"
+VERDICT_FILE="$SCRIPT_DIR/verdicts/epistemic_verdict_$TIMESTAMP.json"
 EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Colours
