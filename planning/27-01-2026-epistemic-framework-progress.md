@@ -189,3 +189,49 @@ All documentation reviewed against STYLE.md:
 - Dispatch test fails if output is normal review instead of verification checklist
 - Adversarial test fails if output incorrectly triggers verification mode
 
+### Verdict Files Reorganised
+
+**Problem**: Verdict JSON files were scattered in `tests/automated/`, mixing generated outputs with source.
+
+**Solution**: Created `tests/automated/verdicts/` subdirectory:
+- All test scripts updated to write verdicts there
+- `.gitignore` updated to ignore `verdicts/*.json` and `verdicts/*.txt`
+- `verdicts/README.md` explains why files are written here and ignored
+- `tests/README.md` updated to document the structure
+
+### Tests README Added
+
+Created `tests/README.md` documenting:
+- Testing philosophy (AI evaluates AI, verdict as state of truth)
+- All automated tests with falsification criteria
+- Test scenarios and their purpose
+- Manual QA procedures
+- How to add new tests
+
+### /epistemic-investigation Command Added
+
+**Origin**: External feedback that read-only discovery can't validate hypotheses about runtime behaviour.
+
+**Design**: Falsification-focused hypothesis testing as a "side quest":
+- Creates isolated `investigation/<topic>` branch
+- Creates `INVESTIGATION-STATUS.md` as breadcrumb for dispatch
+- Step-wise Q&A to clarify hypothesis and design experiments
+- Records observations, produces verdict (falsified/failed to falsify/inconclusive)
+- Hands back to main context when complete
+
+**Dispatch integration**: `/epistemic` now checks for investigation context first:
+- Detects `investigation/*` branch pattern or `INVESTIGATION-STATUS.md` file
+- Reviews investigation rigour instead of normal project review
+
+### Security Issue Found and Resolved
+
+**Problem**: vLLM project files (`planning/28-01-2026-vllm-*.md`) were committed to the framework repo and pushed to GitHub. These contained Meta-internal references.
+
+**Solution**:
+- Backed up working tree
+- Used `git filter-branch` to remove files from entire history
+- Force-pushed to GitHub
+- Files preserved in backup for vLLM project use
+
+**Lesson**: Project-specific discovery reports should not be committed to the framework repo.
+

@@ -1,6 +1,6 @@
 ---
 description: Systematic audit of reasoning quality, goal alignment, and falsification discipline
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git log:*), Bash(git status:*), Bash(git diff:*)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git log:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git rev-parse:*)
 ---
 
 # Epistemic Review
@@ -17,11 +17,33 @@ Before proceeding, check for context markers in this order:
 
 ### If you are in an investigation context
 
-**Check for markers:**
-1. Git branch matches `investigation/*` (run `git branch --show-current`)
-2. File `INVESTIGATION-STATUS.md` exists in project root
+**Search for investigation markers:**
 
-If either marker is present:
+1. Check git branch: `git branch --show-current 2>/dev/null`
+   - If branch starts with `investigation/` → **clearly investigating**
+
+2. Search for `INVESTIGATION-STATUS.md` in reasonable locations:
+   ```bash
+   find . -maxdepth 3 -name "INVESTIGATION-STATUS.md" 2>/dev/null
+   ```
+   Also check repo root if different from cwd:
+   ```bash
+   test -f "$(git rev-parse --show-toplevel 2>/dev/null)/INVESTIGATION-STATUS.md" && echo "found at repo root"
+   ```
+
+**Make a judgement:**
+
+| Finding | Verdict | Action |
+|---------|---------|--------|
+| Branch is `investigation/*` | Clearly investigating | Dispatch to investigation review |
+| `INVESTIGATION-STATUS.md` at repo root or cwd | Clearly investigating | Dispatch to investigation review |
+| `INVESTIGATION-STATUS.md` found elsewhere | Maybe investigating | Ask the user |
+| No markers found | Clearly not investigating | Continue to next check |
+
+**If uncertain, ask:**
+> "I found an INVESTIGATION-STATUS.md file at [path]. Are you currently in an investigation, or is this a test fixture / old file?"
+
+If the user confirms investigation context:
 
 → **Dispatch to investigation review**: Review the investigation work, not the main project. Check:
 - Is the hypothesis clearly stated and falsifiable?

@@ -25,6 +25,7 @@ tests/
 │   │   ├── no_plan_project/    # Project missing plan/progress files
 │   │   ├── messy_project/      # Scattered artefacts for discovery
 │   │   ├── post_discovery/     # Valid discovery report for dispatch testing
+│   │   ├── investigation/      # Investigation context with status file
 │   │   └── bad_discovery/      # Deliberately bad report (should-fail test)
 │   ├── verdicts/        # Generated test outputs (git-ignored)
 │   └── test_*.sh        # Test scripts
@@ -49,6 +50,8 @@ cd tests/automated
 ./test_epistemic_recovery.sh
 ./test_epistemic_dispatch.sh
 ./test_dispatch_adversarial.sh
+./test_investigation_dispatch.sh
+./test_investigation_adversarial.sh
 ./test_evaluator_catches_bad.sh
 ```
 
@@ -62,6 +65,8 @@ cd tests/automated
 | `test_epistemic_recovery.sh` | Tests `/epistemic-recovery` plan generation | Fails if plan missing required properties |
 | `test_epistemic_dispatch.sh` | Tests dispatch to verification after discovery | Fails if normal review produced instead of verification |
 | `test_dispatch_adversarial.sh` | Tests NO dispatch without discovery context | Fails if verification mode incorrectly triggered |
+| `test_investigation_dispatch.sh` | Tests dispatch to investigation review | Fails if normal review produced instead of investigation review |
+| `test_investigation_adversarial.sh` | Tests NO investigation dispatch without markers | Fails if investigation review incorrectly triggered |
 | `test_evaluator_catches_bad.sh` | Meta-test: evaluator catches bad reports | Fails if evaluator passes a known-bad report |
 
 ### Scenarios
@@ -80,6 +85,10 @@ cd tests/automated
 **bad_discovery/**: Deliberately incomplete discovery report.
 - Missing sections, wrong verdicts
 - Used to verify the evaluator catches errors (should-fail test)
+
+**investigation/**: Investigation context with status file.
+- `INVESTIGATION-STATUS.md` - Mock investigation in progress
+- Used to test `/epistemic` dispatch to investigation review mode
 
 ### Verdict Files
 
