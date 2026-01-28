@@ -98,3 +98,46 @@ Alex's motivation:
 ### Remaining
 
 - vLLM discovery session (real-world validation)
+
+## 28-01-2026 - Framework Iteration from Real-World Test
+
+### What Was Tested
+
+- Fresh Claude Code instance ran `/epistemic-discovery` on vLLM free-threaded Python project
+- Produced discovery report and process log
+- ~45 minutes, 8 human questions, 6 core deliverables identified
+
+### What Worked
+
+- Phase 1 (establish context) prevented premature searching
+- "Do not proceed until you have answers" forced useful human interaction
+- Triage table format enabled efficient review
+- "Ask constantly" rule caught stale documentation (INDEX.md said BLOCKED but deadlock was fixed)
+
+### What Was Missing
+
+**Gap analysis**: The report identified artefacts but not the path to terminal goal:
+- Nothing about porting patches to latest vLLM
+- Nothing about test environment structure
+- No instrumental goals beyond artefact handling
+
+### Framework Update
+
+Added Phase 4: Gap Analysis to `/epistemic-discovery`:
+- Step 1: AI creates gap analysis plan (3-6 questions)
+- Step 2: Work through questions ONE AT A TIME (cognitive load consideration)
+- Step 3: Synthesise into instrumental goals with dependencies
+
+Key design decision: **Do not batch questions** - humans have limited working memory. One question, one answer, one confirmation, then next.
+
+### Suggested Improvements from Process Log
+
+- Prompt for "has documentation been updated recently?" check
+- Staleness detector heuristic for docs with dates
+- More structured triage categories (core/supporting/separate/superseded)
+
+### Remaining
+
+- Complete gap analysis on vLLM project (patch into existing session)
+- Run /epistemic-recovery when discovery complete
+
