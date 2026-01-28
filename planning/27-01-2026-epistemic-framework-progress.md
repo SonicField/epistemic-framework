@@ -141,3 +141,51 @@ Key design decision: **Do not batch questions** - humans have limited working me
 - Complete gap analysis on vLLM project (patch into existing session)
 - Run /epistemic-recovery when discovery complete
 
+### Dispatch System Added
+
+**Problem identified**: Complex multi-phase instructions in one command cause AI to lose track. User experience confirmed step-by-step Q&A worked well for gap analysis - "flushed out embedded knowledge" that batched questions would have missed.
+
+**Solution**: `/epistemic` becomes a dispatch system:
+- Detects context (was discovery or recovery run this session?)
+- Dispatches to appropriate verification command
+- Falls back to normal review otherwise
+
+**New command**: `/epistemic-discovery-verify`
+- Checks all required sections present in discovery report
+- Verifies confirmed restatements captured in full (not one-liners)
+- Catches context window leakage (discussed but not in report)
+- Produces verification checklist
+
+**Architecture**:
+```
+/epistemic
+    │
+    ├─► Discovery context → /epistemic-discovery-verify
+    ├─► Recovery context → normal review (future: may specialize)
+    └─► Neither → normal review
+```
+
+**Pathos validation**: Step-by-step Q&A with confirmation worked. The format "So [restatement]. Is that correct?" served the human - surfaced knowledge that a wall of questions would have missed.
+
+### Style Check
+
+All documentation reviewed against STYLE.md:
+- British English throughout
+- Short sentences, tables where they clarify
+- No padding or hedging
+- No "axioms" or Americanised Latin
+
+### Dispatch System Tests Added
+
+**Problem identified**: No tests existed for the dispatch system.
+
+**Tests created**:
+- `test_epistemic_dispatch.sh` - Verifies `/epistemic` dispatches to verification mode when run after discovery
+- `test_dispatch_adversarial.sh` - Verifies `/epistemic` produces normal review when NO discovery context (no false dispatch)
+
+**Test scenario**: `scenarios/post_discovery/` - Contains a valid discovery report for dispatch testing
+
+**Falsification criteria**:
+- Dispatch test fails if output is normal review instead of verification checklist
+- Adversarial test fails if output incorrectly triggers verification mode
+

@@ -45,9 +45,12 @@ Claude Code slash commands that apply these principles:
 
 | Command | Purpose |
 |---------|---------|
-| `/epistemic` | Review current session for drift, bullshit, blind spots |
+| `/epistemic` | Review and dispatch - detects context, routes to appropriate verification |
 | `/epistemic-discovery` | Read-only archaeology of a messy project |
+| `/epistemic-discovery-verify` | Verify discovery report is complete (auto-dispatched) |
 | `/epistemic-recovery` | Step-wise restructuring with confirmation |
+
+The dispatch design keeps one entry point (`/epistemic`) while allowing context-specific verification. Run `/epistemic` after discovery and it verifies the report. Run it after recovery and it reviews the work. Run it mid-session and it audits for drift.
 
 ### 3. Testing
 

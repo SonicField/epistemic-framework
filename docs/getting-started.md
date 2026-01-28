@@ -26,19 +26,45 @@ The command reviews the conversation history and any project files, then produce
 
 When you have scattered artefacts, unclear goals, and no documentation:
 
+**Step 1: Discovery**
+
 ```
 /epistemic-discovery
 ```
 
 The AI asks you questions. Answer them. You know things the files cannot tell.
 
-At the end, you get a discovery report: what exists, what it's for, what to keep or discard. Review it. Then:
+The process has four phases:
+1. **Establish Context** - terminal goal, timeframe, locations
+2. **Archaeology** - find artefacts, present to you, build a map
+3. **Triage** - assess each artefact with your input
+4. **Gap Analysis** - identify what's missing to reach the goal (one question at a time)
+
+At the end, you get a discovery report.
+
+**Step 2: Verify**
+
+```
+/epistemic
+```
+
+After discovery, run `/epistemic`. It detects you just did discovery and automatically verifies the report is complete - all sections present, confirmed restatements captured in full, nothing lost from the conversation.
+
+**Step 3: Recovery**
 
 ```
 /epistemic-recovery
 ```
 
 The AI creates a plan. Each step is described, justified, reversible. You confirm each step before it executes. Nothing changes without your approval.
+
+**Step 4: Review**
+
+```
+/epistemic
+```
+
+After recovery, run `/epistemic` again. It reviews the recovery work for drift, bullshit, and blind spots.
 
 ---
 

@@ -28,9 +28,23 @@ Built on the foundation:
 
 ## Tools
 
-- [/epistemic](claude_tools/epistemic.md) - Systematic review of reasoning quality and goal alignment
+### Core Command
+
+- [/epistemic](claude_tools/epistemic.md) - Review and dispatch
+
+Run this after any session. It detects context and dispatches:
+- After `/epistemic-discovery` → verifies the discovery report is complete
+- After `/epistemic-recovery` → reviews the recovery work
+- Otherwise → general epistemic review
+
+### Workflow Commands
+
 - [/epistemic-discovery](claude_tools/epistemic-discovery.md) - Read-only archaeology for messy projects
 - [/epistemic-recovery](claude_tools/epistemic-recovery.md) - Step-wise restructuring with confirmation
+
+### Verification Commands
+
+- [/epistemic-discovery-verify](claude_tools/epistemic-discovery-verify.md) - Verify discovery report completeness (auto-dispatched by /epistemic)
 
 ## Planning
 
