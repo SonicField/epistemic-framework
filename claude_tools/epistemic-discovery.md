@@ -99,6 +99,8 @@ For each question:
 
 **Do not batch questions.** Humans have limited working memory. One question, one answer, one confirmation.
 
+**Important**: The confirmed restatements are valuable artefacts. They contain distilled human knowledge in verified form. These restatements must be preserved in full in the discovery report - they are input to recovery.
+
 **Step 3: Synthesise into instrumental goals**
 
 After all questions are answered, summarise:
@@ -135,11 +137,27 @@ At the end of discovery, produce a report for the human to review before recover
 ## Valuable Outcomes Identified
 [What was achieved, with evidence pointers]
 
-## Instrumental Goals (from Gap Analysis)
+## Gap Analysis
+
+### Instrumental Goals Summary
 
 | Goal | Why Needed | Dependencies |
 |------|------------|--------------|
 | [action needed] | [what it enables] | [what must come first] |
+
+### Confirmed Understanding (Full Detail)
+
+For each gap question, preserve the confirmed restatement in full. These are verified distilled knowledge - recovery needs them.
+
+#### [Question 1 topic]
+**Question**: [what was asked]
+**Confirmed**: [the full restatement that was verified by human]
+
+#### [Question 2 topic]
+**Question**: [what was asked]
+**Confirmed**: [the full restatement that was verified by human]
+
+[Continue for all gap questions]
 
 ## Open Questions
 [What remains uncertain - needs human input or further investigation]
@@ -147,6 +165,8 @@ At the end of discovery, produce a report for the human to review before recover
 ## Recommended Next Steps
 [What /epistemic-recovery should do - but no action taken yet]
 ```
+
+**Note**: The discovery report is the sole input to `/epistemic-recovery`. Everything recovery needs must be in this report. Do not rely on conversation history or external logs.
 
 ---
 
