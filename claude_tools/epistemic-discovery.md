@@ -73,6 +73,41 @@ For each artefact found, **ask the human**:
 | notes.md | ~/docs/ | Design thinking | Partial | Extract key decisions |
 ```
 
+### Phase 4: Gap Analysis
+
+You now know what exists. But **what's missing** to reach the terminal goal?
+
+This phase identifies instrumental goals that aren't captured in the artefacts. Work through this **step by step** - do not dump all questions at once.
+
+**Step 1: Create a gap analysis plan**
+
+Based on the terminal goal and what you've found, identify 3-6 questions about:
+- What needs to happen to get from current state to terminal state?
+- What infrastructure, environment, or tooling is needed?
+- What external dependencies or processes must be navigated?
+- What knowledge or decisions are missing?
+
+Present this plan to the human: "I've identified N questions to understand the gaps. May I work through them one at a time?"
+
+**Step 2: Work through questions one at a time**
+
+For each question:
+1. Ask the question clearly
+2. Wait for the human's answer
+3. Confirm your understanding: "So [restatement]. Is that correct?"
+4. Only then proceed to the next question
+
+**Do not batch questions.** Humans have limited working memory. One question, one answer, one confirmation.
+
+**Step 3: Synthesise into instrumental goals**
+
+After all questions are answered, summarise:
+- What instrumental goals are needed (not artefacts, but actions)
+- What sequence makes sense
+- What dependencies exist between goals
+
+Present this synthesis to the human for confirmation before including in the report.
+
 ---
 
 ## Output: Discovery Report
@@ -99,6 +134,12 @@ At the end of discovery, produce a report for the human to review before recover
 
 ## Valuable Outcomes Identified
 [What was achieved, with evidence pointers]
+
+## Instrumental Goals (from Gap Analysis)
+
+| Goal | Why Needed | Dependencies |
+|------|------------|--------------|
+| [action needed] | [what it enables] | [what must come first] |
 
 ## Open Questions
 [What remains uncertain - needs human input or further investigation]
