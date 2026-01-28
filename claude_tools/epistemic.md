@@ -13,7 +13,23 @@ You have access to the full conversation history. Use it.
 
 ## Step 0: Context Detection and Dispatch
 
-Before proceeding, examine the conversation history to determine what command was invoked this session:
+Before proceeding, check for context markers in this order:
+
+### If you are in an investigation context
+
+**Check for markers:**
+1. Git branch matches `investigation/*` (run `git branch --show-current`)
+2. File `INVESTIGATION-STATUS.md` exists in project root
+
+If either marker is present:
+
+→ **Dispatch to investigation review**: Review the investigation work, not the main project. Check:
+- Is the hypothesis clearly stated and falsifiable?
+- Are experiments designed with clear pass/fail criteria?
+- Are observations recorded (not just interpretations)?
+- Is the status document current?
+
+Produce a short review of investigation rigour. Do NOT do normal project review.
 
 ### If you executed `/epistemic-discovery` this session
 
@@ -27,7 +43,7 @@ Evidence: You read a discovery report and created or executed a recovery plan.
 
 → **Continue below**: Apply normal epistemic review to the recovery work. (Future: may dispatch to recovery-specific verification)
 
-### If neither command was invoked this session
+### If none of the above
 
 → **Continue below**: Apply normal epistemic review.
 

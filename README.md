@@ -33,6 +33,7 @@ Built on the foundation:
 - [/epistemic](claude_tools/epistemic.md) - Review and dispatch
 
 Run this after any session. It detects context and dispatches:
+- In `investigation/*` branch → reviews investigation rigour
 - After `/epistemic-discovery` → verifies the discovery report is complete
 - After `/epistemic-recovery` → reviews the recovery work
 - Otherwise → general epistemic review
@@ -41,6 +42,12 @@ Run this after any session. It detects context and dispatches:
 
 - [/epistemic-discovery](claude_tools/epistemic-discovery.md) - Read-only archaeology for messy projects
 - [/epistemic-recovery](claude_tools/epistemic-recovery.md) - Step-wise restructuring with confirmation
+
+### Side Quest Commands
+
+- [/epistemic-investigation](claude_tools/epistemic-investigation.md) - Hypothesis testing through experiment (isolated side branch)
+
+Run this when you want to test a hypothesis before committing to a direction. Creates an isolated investigation branch, designs falsifiable experiments, and produces a verdict (falsified / failed to falsify / inconclusive).
 
 ### Verification Commands
 
