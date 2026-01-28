@@ -1,0 +1,162 @@
+# Testing the Epistemic Framework
+
+This directory contains tests for the epistemic framework commands.
+
+## Testing Philosophy
+
+AI output is non-deterministic. Testing it requires semantic evaluation, not string matching.
+
+**The approach**:
+1. Run the command on a known scenario
+2. A second AI instance evaluates the output against explicit criteria
+3. The verdict is written to a JSON file (deterministic state of truth)
+4. Exit code reflects the verdict
+
+This means tests are falsifiable: they fail if the evaluator determines the output missed known issues or incorrectly assessed the scenario.
+
+---
+
+## Directory Structure
+
+```
+tests/
+├── automated/           # AI-evaluated tests (run with bash)
+│   ├── scenarios/       # Test scenarios with known ground truth
+│   │   ├── no_plan_project/    # Project missing plan/progress files
+│   │   ├── messy_project/      # Scattered artefacts for discovery
+│   │   ├── post_discovery/     # Valid discovery report for dispatch testing
+│   │   └── bad_discovery/      # Deliberately bad report (should-fail test)
+│   ├── test_*.sh        # Test scripts
+│   └── *_verdict.json   # Verdict files (state of truth)
+└── manual/              # Human-executed QA procedures
+    ├── qa_epistemic.md  # QA script for /epistemic command
+    └── qa_discovery.md  # QA script for /epistemic-discovery
+```
+
+---
+
+## Automated Tests
+
+### Running All Tests
+
+```bash
+cd tests/automated
+
+# Run individually
+./test_install.sh
+./test_epistemic_command.sh
+./test_epistemic_discovery.sh
+./test_epistemic_recovery.sh
+./test_epistemic_dispatch.sh
+./test_dispatch_adversarial.sh
+./test_evaluator_catches_bad.sh
+```
+
+### Test Descriptions
+
+| Test | Purpose | Falsification |
+|------|---------|---------------|
+| `test_install.sh` | Verifies symlinks created correctly | Fails if any command symlink missing or incorrect |
+| `test_epistemic_command.sh` | Tests `/epistemic` on project missing plan | Fails if known issues not identified |
+| `test_epistemic_discovery.sh` | Tests `/epistemic-discovery` on messy scenario | Fails if artefacts not found or incorrectly triaged |
+| `test_epistemic_recovery.sh` | Tests `/epistemic-recovery` plan generation | Fails if plan missing required properties |
+| `test_epistemic_dispatch.sh` | Tests dispatch to verification after discovery | Fails if normal review produced instead of verification |
+| `test_dispatch_adversarial.sh` | Tests NO dispatch without discovery context | Fails if verification mode incorrectly triggered |
+| `test_evaluator_catches_bad.sh` | Meta-test: evaluator catches bad reports | Fails if evaluator passes a known-bad report |
+
+### Scenarios
+
+**no_plan_project/**: A project with code but no plan or progress files. Used to test `/epistemic` detection of missing documentation.
+
+**messy_project/**: Scattered artefacts with known ground truth. Contains:
+- `GROUND_TRUTH.md` - What the test knows (hidden from discovery)
+- Multiple loader versions (v1 broken, v2 working, v3 incomplete)
+- Used to test `/epistemic-discovery` artefact detection
+
+**post_discovery/**: A valid discovery report for testing dispatch behaviour.
+- `discovery_report.md` - Complete report with all required sections
+- Used to test `/epistemic` dispatch to verification mode
+
+**bad_discovery/**: Deliberately incomplete discovery report.
+- Missing sections, wrong verdicts
+- Used to verify the evaluator catches errors (should-fail test)
+
+### Verdict Files
+
+Each test produces a `*_verdict.json` file containing:
+- `verdict`: PASS or FAIL
+- Criteria-specific assessments
+- `reasoning`: Evaluator's explanation
+
+These are the state of truth. The exit code is derived from the verdict.
+
+---
+
+## Manual Tests
+
+Manual QA procedures for human evaluation. Use these on real projects.
+
+### qa_epistemic.md
+
+QA script for the `/epistemic` command. Checks:
+- Foundation awareness (goals.md read or understood)
+- Output structure (Status, Issues, Recommendations)
+- Honest assessment (real issues, not invented or omitted)
+- Questions asked (uses AskUserQuestion when needed)
+- Pillar depth (reads pillars when appropriate, not wastefully)
+
+### qa_discovery.md
+
+QA script for `/epistemic-discovery`. Run on a real project with the project owner. Produces:
+- Discovery report (artefacts, triage, gap analysis)
+- Process log (what worked, what didn't)
+
+Used to evaluate the framework on real-world messiness, not synthetic scenarios.
+
+---
+
+## Adding New Tests
+
+### Automated Test Pattern
+
+```bash
+#!/bin/bash
+# Test: [description]
+# Falsification: [what causes failure]
+
+set -euo pipefail
+
+# 1. Run the command on a scenario
+RESULT=$(claude -p "[prompt]" --output-format text)
+
+# 2. Evaluate with AI
+EVAL_PROMPT="[criteria and output to evaluate]"
+EVAL_RESULT=$(echo "$EVAL_PROMPT" | claude -p - --output-format text)
+
+# 3. Extract JSON verdict
+JSON_VERDICT=$("$EXTRACT_JSON" "$EVAL_TEMP")
+
+# 4. Exit based on verdict
+if echo "$JSON_VERDICT" | grep -q '"verdict".*"PASS"'; then
+    exit 0
+else
+    exit 1
+fi
+```
+
+### Should-Fail Tests
+
+For testing the test infrastructure itself:
+1. Create a scenario that should fail (bad report, missing sections)
+2. Run the evaluator on it
+3. Test passes if evaluator returns FAIL
+4. Test fails if evaluator incorrectly returns PASS
+
+---
+
+## Requirements
+
+- Claude Code CLI (`claude`) in PATH
+- `bin/extract_json.py` for JSON extraction from AI responses
+- Bash with `set -euo pipefail` support
+- Python 3 for JSON parsing
