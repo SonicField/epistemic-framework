@@ -50,8 +50,15 @@ Format the process log as:
 
 ## Outputs Expected
 
-1. **Discovery Report** - standard output from `/epistemic-discovery`
-2. **Process Log** - meta-recording of how the process went
+Write both outputs to files in the epistemic framework's planning directory:
+
+1. **Discovery Report**: `~/claude_docs/epistemic-framework/planning/28-01-2026-vllm-discovery-report.md`
+   - Follow the format defined in `/epistemic-discovery` command
+   - Must include: Terminal Goal, Artefacts Found, Triage Summary, Valuable Outcomes, Open Questions, Recommended Next Steps
+
+2. **Process Log**: `~/claude_docs/epistemic-framework/planning/28-01-2026-vllm-process-log.md`
+   - Use the format above (Search Actions, Surprises, Human Input Required, Command Guidance, Confusion)
+   - Write entries as you go, not retrospectively
 
 Both will be used to evaluate and improve the epistemic framework.
 
