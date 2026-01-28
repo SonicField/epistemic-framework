@@ -235,3 +235,51 @@ Created `tests/README.md` documenting:
 
 **Lesson**: Project-specific discovery reports should not be committed to the framework repo.
 
+## 28-01-2026 (Continued) - Investigation Dispatch Testing
+
+### Problem Identified
+
+Investigation dispatch tests failing because:
+1. AI reasons about context rather than following detection instructions mechanically
+2. `allowed-tools` didn't include commands needed for detection (`find`, `test`)
+3. Test scenarios didn't provide sufficient context for AI to recognise investigation
+4. AI correctly identifies `INVESTIGATION-STATUS.md` but judges it as "test fixture" and proceeds with normal review
+
+### Attempted Fixes
+
+1. **Added explicit detection commands** - Updated `epistemic.md` with `find` and `test -f` commands
+   - Result: Failed - commands not in `allowed-tools`
+
+2. **Switched to Glob** - Use Glob tool instead of bash find
+   - Result: AI still not following detection steps reliably
+
+3. **Made detection mandatory** - Added "MANDATORY FIRST ACTION - DO NOT SKIP" header
+   - Result: AI still reasons about context rather than following mechanically
+
+4. **Added context simulation** - Test provides fake progress log showing active investigation
+   - Result: Pending testing
+
+### Key Insight
+
+The AI's behaviour (reason about context, ask when uncertain) may be better than mechanical detection. The test expectation may be wrong, not the AI behaviour.
+
+### Plan Created
+
+See `28-01-2026-investigation-testing-plan.md` for systematic approach:
+- Three outcomes: Clearly Investigating, Maybe Investigating, Not Investigating
+- Confirmational and adversarial tests for each
+- Priority-ordered implementation
+
+### Uncommitted Changes
+
+- `claude_tools/epistemic.md` - Multiple detection logic improvements
+- `tests/automated/test_investigation_dispatch.sh` - Added context simulation
+- `planning/28-01-2026-investigation-testing-plan.md` - New plan file
+
+### Next Steps
+
+1. Commit current state
+2. Implement P0 tests (branch-based dispatch, no markers → normal)
+3. Run tests and iterate
+4. Push to remote
+

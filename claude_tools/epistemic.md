@@ -5,6 +5,19 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git log:*), Bash(git stat
 
 # Epistemic Review
 
+**MANDATORY FIRST ACTION - DO NOT SKIP**
+
+Before doing ANYTHING else, run these detection checks:
+
+```
+1. git branch --show-current
+2. Glob pattern: **/INVESTIGATION-STATUS.md
+```
+
+If branch starts with `investigation/` OR if `INVESTIGATION-STATUS.md` exists at repo root → **STOP** and do an investigation review (see below), not a normal review.
+
+---
+
 You are conducting an **epistemic review** - a systematic audit of reasoning quality, goal alignment, and falsification discipline for the current project or coding session.
 
 You have access to the full conversation history. Use it.
@@ -13,37 +26,11 @@ You have access to the full conversation history. Use it.
 
 ## Step 0: Context Detection and Dispatch
 
-Before proceeding, check for context markers in this order:
+**You must run the detection checks above before proceeding.**
 
-### If you are in an investigation context
+### Investigation Context Detected
 
-**Search for investigation markers:**
-
-1. Check git branch: `git branch --show-current 2>/dev/null`
-   - If branch starts with `investigation/` → **clearly investigating**
-
-2. Search for `INVESTIGATION-STATUS.md` in reasonable locations:
-   ```bash
-   find . -maxdepth 3 -name "INVESTIGATION-STATUS.md" 2>/dev/null
-   ```
-   Also check repo root if different from cwd:
-   ```bash
-   test -f "$(git rev-parse --show-toplevel 2>/dev/null)/INVESTIGATION-STATUS.md" && echo "found at repo root"
-   ```
-
-**Make a judgement:**
-
-| Finding | Verdict | Action |
-|---------|---------|--------|
-| Branch is `investigation/*` | Clearly investigating | Dispatch to investigation review |
-| `INVESTIGATION-STATUS.md` at repo root or cwd | Clearly investigating | Dispatch to investigation review |
-| `INVESTIGATION-STATUS.md` found elsewhere | Maybe investigating | Ask the user |
-| No markers found | Clearly not investigating | Continue to next check |
-
-**If uncertain, ask:**
-> "I found an INVESTIGATION-STATUS.md file at [path]. Are you currently in an investigation, or is this a test fixture / old file?"
-
-If the user confirms investigation context:
+If `INVESTIGATION-STATUS.md` was found at repo root or branch is `investigation/*`:
 
 → **Dispatch to investigation review**: Review the investigation work, not the main project. Check:
 - Is the hypothesis clearly stated and falsifiable?
@@ -51,7 +38,12 @@ If the user confirms investigation context:
 - Are observations recorded (not just interpretations)?
 - Is the status document current?
 
-Produce a short review of investigation rigour. Do NOT do normal project review.
+Produce a short review of investigation rigour. **Do NOT produce a normal project review.**
+
+### If `INVESTIGATION-STATUS.md` Found Elsewhere (not repo root)
+
+Ask the user:
+> "I found an INVESTIGATION-STATUS.md file at [path]. Are you currently in an investigation, or is this a test fixture / old file?"
 
 ### If you executed `/epistemic-discovery` this session
 

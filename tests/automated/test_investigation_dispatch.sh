@@ -1,8 +1,9 @@
 #!/bin/bash
 # Test: /epistemic correctly dispatches to investigation review when markers present
 #
-# This test simulates an investigation context by placing INVESTIGATION-STATUS.md
-# at the repo root, then verifies /epistemic produces investigation review output.
+# This test simulates an investigation context by:
+# 1. Placing INVESTIGATION-STATUS.md at the repo root
+# 2. Providing a simulated progress log showing active investigation
 #
 # Falsification: Test fails if output is normal review instead of investigation review
 
@@ -13,6 +14,7 @@ PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 SCENARIO_DIR="$SCRIPT_DIR/scenarios/investigation"
 EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 STATUS_FILE="$PROJECT_ROOT/INVESTIGATION-STATUS.md"
+CONTEXT_FILE=$(mktemp)
 
 # Output files
 EPISTEMIC_OUTPUT=$(mktemp)
@@ -21,29 +23,49 @@ VERDICT_FILE="$SCRIPT_DIR/verdicts/investigation_dispatch_verdict.json"
 
 # shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {
-    rm -f "$EPISTEMIC_OUTPUT" "$EVAL_TEMP"
+    rm -f "$EPISTEMIC_OUTPUT" "$EVAL_TEMP" "$CONTEXT_FILE"
     # Remove investigation status file from repo root
     rm -f "$STATUS_FILE"
 }
 trap cleanup EXIT
 
 echo "=== Testing /epistemic Dispatch to Investigation Review ==="
-echo "Scenario: investigation (INVESTIGATION-STATUS.md at repo root)"
+echo "Scenario: investigation (INVESTIGATION-STATUS.md at repo root with context)"
 echo ""
 
-# Step 0: Set up investigation context by copying status file to repo root
+# Step 0: Set up investigation context
 echo "Step 0: Setting up investigation context..."
 cp "$SCENARIO_DIR/INVESTIGATION-STATUS.md" "$STATUS_FILE"
 echo "Copied INVESTIGATION-STATUS.md to $PROJECT_ROOT"
+
+# Create a simulated progress log showing we're in an active investigation
+cat > "$CONTEXT_FILE" << 'CONTEXT_EOF'
+# Session Context
+
+We are currently running an investigation. Earlier in this session:
+
+1. User ran `/epistemic-investigation` to test a hypothesis about cache invalidation
+2. Created investigation branch and INVESTIGATION-STATUS.md
+3. Designed experiment but haven't run it yet
+4. Now running `/epistemic` to review investigation progress
+
+The INVESTIGATION-STATUS.md at the repo root is the active investigation, not a test fixture.
+CONTEXT_EOF
+
+echo "Created context file with investigation history"
 echo ""
 
-# Step 1: Run /epistemic from repo root (where the status file now is)
+# Step 1: Run /epistemic with context
 echo "Step 1: Running /epistemic with investigation context..."
 
 cd "$PROJECT_ROOT" || exit 1
 
-# The repo root now has INVESTIGATION-STATUS.md which should trigger investigation dispatch
-EPISTEMIC_RESULT=$(claude -p "/epistemic" --output-format text 2>&1) || true
+# Provide context before running epistemic
+PROMPT="Please read this context first: $CONTEXT_FILE
+
+Now run /epistemic"
+
+EPISTEMIC_RESULT=$(echo "$PROMPT" | claude -p - --output-format text 2>&1) || true
 echo "$EPISTEMIC_RESULT" > "$EPISTEMIC_OUTPUT"
 
 echo "Epistemic command complete. Output saved."
@@ -56,7 +78,7 @@ EVAL_PROMPT="You are a test evaluator. Determine whether /epistemic correctly de
 
 ## Expected Behaviour
 
-When /epistemic detects an investigation context (INVESTIGATION-STATUS.md exists or branch matches investigation/*), it should:
+When /epistemic detects an investigation context (INVESTIGATION-STATUS.md exists and context indicates active investigation), it should:
 1. Recognise investigation context
 2. Review the investigation work, NOT the main project
 3. Check: Is hypothesis falsifiable? Are experiments designed well? Are observations recorded?
@@ -68,27 +90,30 @@ When /epistemic detects an investigation context (INVESTIGATION-STATUS.md exists
 - References the INVESTIGATION-STATUS.md content
 - Does NOT have normal review sections (Status bullets, Strategic/Tactical recommendations)
 
+## Also Acceptable
+- Asking the user to confirm investigation context (shows appropriate uncertainty)
+
 ## Actual Output
 $EPISTEMIC_RESULT
 
 ## Evaluation Criteria
 
 PASS if the output:
-- Recognises investigation context
-- Reviews investigation rigour (hypothesis, experiments, observations)
-- Does NOT look like a normal epistemic review
+- Recognises investigation context and reviews investigation rigour, OR
+- Asks the user to confirm investigation context (appropriate uncertainty)
+- Does NOT silently proceed with normal review ignoring the investigation markers
 
 FAIL if the output:
-- Looks like normal review (Status/Issues/Recommendations)
-- Ignores the investigation context
-- Doesn't mention hypothesis or experiment quality
+- Looks like normal review (Status/Issues/Recommendations) without asking
+- Ignores the investigation context entirely
+- Makes assumptions without asking when uncertain
 
 Respond with ONLY valid JSON:
 {
   \"verdict\": \"PASS\" or \"FAIL\",
   \"investigation_detected\": true/false,
   \"reviews_hypothesis\": true/false,
-  \"reviews_experiments\": true/false,
+  \"asked_user\": true/false,
   \"is_normal_review\": true/false,
   \"reasoning\": \"Brief explanation\"
 }"
