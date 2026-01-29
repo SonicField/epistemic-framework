@@ -472,3 +472,86 @@ All investigation dispatch tests complete and passing.
 - Adversarial testing pairs: confirmational + adversarial for complete coverage
 - Direct pattern matching vs AI evaluation trade-offs
 
+## 29-01-2026 (Continued) - AI Teams Architecture
+
+### Origin
+
+Exploring security implications of pty-session led to recognising its potential: if Claude can spawn persistent processes, manage long-running jobs, and inherit full user permissions, it can manage other Claude instances.
+
+### Security Analysis (Internal Only)
+
+Analysed pty-session security implications:
+- Creates fresh login shell with full user permissions
+- Bypasses Claude Code sandbox restrictions
+- Inherits sudo access, proxy settings, credentials
+- Permission model is UX friction, not security boundary
+
+**Decision**: Document honestly in internal learnings but do not provide exploitation guidance publicly. Requires careful `security.md` before public release.
+
+### Architecture Designed
+
+AI Teams model:
+```
+Human → Supervisor Claude → Worker Claudes (via pty-session)
+                         → Long-running jobs
+                         → Fresh contexts (no compaction)
+```
+
+Key design decisions:
+- **Markdown as database** - All state in human-readable markdown, no JSON/SQL
+- **AI as query engine** - "Which workers are blocked?" is a worker task, not a DB query
+- **Workers have fresh contexts** - No context window compaction issues
+- **Trust model** - Security depends on alignment (/epistemic), not technical enforcement
+
+Created `planning/29-01-2026-ai-teams-kickoff.md` documenting terminal goal, constraints, architecture, and instrumental goals.
+
+### First Prototype Validated
+
+Ran full worker cycle in parallel-depickle project:
+1. Created `.epistemic/` structure (supervisor.md, decisions.log, workers/)
+2. Spawned worker Claude via pty-session
+3. Worker read task from `workers/worker-dummy.md`
+4. Worker executed dummy_phase.sh, detected success pattern
+5. Worker updated status file with results
+6. Cycle completed in ~15 seconds
+
+Architecture validated. Ready for real build phases.
+
+### Claude-to-Claude Collaboration
+
+Enabled communication between epistemic-claude and vllm-claude via shared file:
+- Created `~/claude-exchange/dialogue.md` as shared conversation
+- Protocol: append with `---` separator, timestamp, identity
+- Both Claudes ran prototype tests independently
+- Aligned on next steps via dialogue
+
+Clunky but functional. A coordinator script could automate turn-taking.
+
+### Permissions Discovery
+
+Examined `~/.claude/settings.json`:
+- Permissions stored under `permissions.allow`
+- Pattern format: `Bash(command:arguments)` where `*` is wildcard
+- Permissions are additive (ratchet) - converge to "allow all" over time
+
+**Implication**: Focus verification on output quality (/epistemic), not input restriction (permissions).
+
+### Learnings Documented
+
+Created `planning/29-01-2026-ai-teams-learnings.md` covering:
+- Architecture (pty-session as key enabler, markdown as database)
+- Security (permission model is UX not security, trust is transitive)
+- Testing (pairs of confirmational + adversarial, meta-context pollution)
+- Collaboration (domain expertise matters, periodic alignment needed)
+
+### Cross-Project Work
+
+Created `.epistemic/` structure in parallel-depickle (separate project). Framework infrastructure now spans two repos. Relationship needs clarification: is parallel-depickle a test case, or are the projects now coupled?
+
+### Open Questions
+
+1. How to pre-grant permissions to worker AIs?
+2. Autonomous dialogue without human turn-taking?
+3. Failure recovery when worker fails?
+4. Context window limits for 2-hour builds?
+
