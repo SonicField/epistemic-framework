@@ -118,6 +118,26 @@ Once the human grants script execution permission:
 
 The model assumes alignment. The epistemic framework is the alignment mechanism - not cryptographic enforcement, but goal-seeking stability through explicit articulation and periodic verification.
 
+### Permissions
+
+Workers inherit the user's Claude Code permissions from `~/.claude/settings.json`.
+
+**Operational reality**: The permission system is additive. Permissions are granted as workers request them. Over time, the effective permission set converges to "allow all" for active projects.
+
+**Implication**: The permission model provides friction and visibility, not security boundaries. Once AI teams are operational, assume workers have full capability within the user's account permissions.
+
+**Recommendation**: Focus verification effort on output quality (/epistemic), not input restriction (permissions).
+
+### Documentation Required
+
+Before public release, a `security.md` document must be written covering:
+- The trust model and its limitations
+- What permissions mean in practice
+- The role of alignment vs technical enforcement
+- User responsibilities and assumptions
+
+This requires careful framing to be honest without being prescriptive about circumvention.
+
 ## Next Steps
 
 1. Design supervisor prompt structure
