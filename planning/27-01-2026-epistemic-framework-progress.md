@@ -320,3 +320,70 @@ Updated `claude_tools/epistemic.md`:
 - P2 tests: Full adversarial matrix
 - Commit and push
 
+## 29-01-2026 - PTY Session Tool (Side Quest)
+
+### Origin
+
+While implementing the "ask user" test for investigation dispatch, discovered a fundamental limitation: Claude's Bash tool is one-shot and cannot interact with running processes across multiple tool calls.
+
+### Problem
+
+Testing "ask user and wait for response" behaviour requires:
+1. Starting claude in a test scenario
+2. Sending a command that triggers AskUserQuestion
+3. Detecting the question in output
+4. Responding to it
+5. Verifying the flow completed correctly
+
+This is impossible with one-shot bash commands.
+
+### Solution: pty-session
+
+Created `bin/pty-session` - a tmux-based session manager that enables persistent interactive sessions:
+
+```bash
+pty-session create <name> <command>   # Create session
+pty-session send <name> <text>        # Send keystrokes
+pty-session read <name>               # Capture screen
+pty-session wait <name> <pattern>     # Poll for pattern
+pty-session kill <name>               # Terminate
+pty-session list                      # Show active
+```
+
+### Key Design Decisions
+
+1. **Session isolation**: All sessions prefixed with `pty_` to avoid collision with user's tmux sessions
+2. **Exit codes**: Distinct codes for different failures (2=not found, 3=timeout, 4=invalid args)
+3. **Wait with timeout**: Polling-based pattern detection with configurable timeout
+4. **Self-documenting**: Built-in help extracted from script comments
+
+### Tests Created
+
+| Test | Purpose | Result |
+|------|---------|--------|
+| `test_pty_session_basic.sh` | Create, send, read, kill cycle | PASS |
+| `test_pty_session_wait.sh` | Wait detects patterns | PASS |
+| `test_pty_session_timeout.sh` | Wait times out correctly | PASS |
+| `test_pty_session_adv_no_collision.sh` | No interference with user sessions | PASS |
+| `test_pty_session_adv_invalid.sh` | Graceful error handling | PASS |
+
+### Skill Document
+
+Created `claude_tools/epistemic-tmux.md` documenting:
+- When to use interactive sessions
+- Command reference
+- Usage patterns for REPLs, testing, monitoring
+- Important notes on timing and nested tmux
+
+### Discovery: Meta-Context Pollution
+
+During investigation dispatch testing, discovered that the AI reasons about test context when visible. Running tests in the framework repo caused the AI to identify the test scenario as a test rather than following detection logic.
+
+**Solution**: Use isolated temporary repositories for tests to remove meta-context that confuses the AI.
+
+Wrote this up as `~/docs/ai-meta-reasoning-in-testing.md`.
+
+### Exit Condition
+
+Side quest complete. Can now return to investigation dispatch testing with the ability to properly test interactive "ask user" behaviour.
+

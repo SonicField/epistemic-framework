@@ -1,0 +1,254 @@
+#!/bin/bash
+# pty-session: Manage interactive terminal sessions via tmux
+#
+# This script enables Claude (or any automation) to interact with
+# long-running interactive processes across multiple invocations.
+#
+# Sessions are prefixed with 'pty_' to avoid collision with user sessions.
+#
+# Usage:
+#   pty-session create <name> <command>   Create session running command
+#   pty-session send <name> <text>        Send keystrokes (adds Enter by default)
+#   pty-session read <name>               Capture current screen content
+#   pty-session wait <name> <pattern>     Poll until pattern appears (default 60s)
+#   pty-session kill <name>               Terminate session
+#   pty-session list                      Show active pty-session sessions
+#   pty-session help                      Show this help
+#
+# Options:
+#   --no-enter     With 'send': don't append Enter after text
+#   --timeout=N    With 'wait': timeout in seconds (default 60)
+#   --scrollback=N With 'read': lines of scrollback to capture (default 100)
+#
+# Examples:
+#   pty-session create myrepl 'python3'
+#   pty-session send myrepl 'print("hello")'
+#   pty-session read myrepl
+#   pty-session wait myrepl '>>>'
+#   pty-session kill myrepl
+#
+# Exit codes:
+#   0 - Success
+#   1 - General error
+#   2 - Session not found
+#   3 - Timeout (for wait command)
+#   4 - Invalid arguments
+
+set -uo pipefail
+
+PREFIX="pty_"
+
+usage() {
+    grep '^#' "$0" | grep -v '!/bin/bash' | cut -c3-
+}
+
+session_name() {
+    echo "${PREFIX}$1"
+}
+
+session_exists() {
+    local name
+    name=$(session_name "$1")
+    tmux has-session -t "$name" 2>/dev/null
+}
+
+cmd_create() {
+    local name="${1:-}"
+    shift 2>/dev/null || true
+    local command="$*"
+
+    if [[ -z "$name" ]] || [[ -z "$command" ]]; then
+        echo "Error: create requires <name> and <command>" >&2
+        echo "Usage: pty-session create <name> <command>" >&2
+        return 4
+    fi
+
+    local session
+    session=$(session_name "$name")
+
+    if tmux has-session -t "$session" 2>/dev/null; then
+        echo "Error: Session '$name' already exists" >&2
+        return 1
+    fi
+
+    tmux new-session -d -s "$session" "$command"
+    local rc=$?
+
+    if [[ $rc -eq 0 ]]; then
+        echo "Created session: $name"
+    fi
+    return $rc
+}
+
+cmd_send() {
+    local name="${1:-}"
+    local no_enter=false
+    shift 2>/dev/null || true
+
+    # Check for --no-enter flag
+    if [[ "${1:-}" == "--no-enter" ]]; then
+        no_enter=true
+        shift
+    fi
+
+    local text="$*"
+
+    if [[ -z "$name" ]]; then
+        echo "Error: send requires <name> and <text>" >&2
+        return 4
+    fi
+
+    local session
+    session=$(session_name "$name")
+
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        echo "Error: Session '$name' not found" >&2
+        return 2
+    fi
+
+    # Send the text
+    tmux send-keys -t "$session" "$text"
+
+    # Send Enter unless --no-enter specified
+    if [[ "$no_enter" == false ]]; then
+        # Small delay then Enter for reliable submission
+        sleep 0.1
+        tmux send-keys -t "$session" Enter
+    fi
+
+    return 0
+}
+
+cmd_read() {
+    local name="${1:-}"
+    local scrollback=100
+
+    # Check for --scrollback option
+    if [[ "${2:-}" == --scrollback=* ]]; then
+        scrollback="${2#--scrollback=}"
+    fi
+
+    if [[ -z "$name" ]]; then
+        echo "Error: read requires <name>" >&2
+        return 4
+    fi
+
+    local session
+    session=$(session_name "$name")
+
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        echo "Error: Session '$name' not found" >&2
+        return 2
+    fi
+
+    # Capture pane with scrollback
+    tmux capture-pane -t "$session" -p -S "-$scrollback"
+}
+
+cmd_wait() {
+    local name="${1:-}"
+    local pattern="${2:-}"
+    local timeout=60
+
+    # Check for --timeout option
+    if [[ "${3:-}" == --timeout=* ]]; then
+        timeout="${3#--timeout=}"
+    fi
+
+    if [[ -z "$name" ]] || [[ -z "$pattern" ]]; then
+        echo "Error: wait requires <name> and <pattern>" >&2
+        return 4
+    fi
+
+    local session
+    session=$(session_name "$name")
+
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        echo "Error: Session '$name' not found" >&2
+        return 2
+    fi
+
+    local elapsed=0
+    local interval=0.5
+
+    while (( $(echo "$elapsed < $timeout" | bc -l) )); do
+        local content
+        content=$(tmux capture-pane -t "$session" -p -S -100)
+
+        if echo "$content" | grep -q "$pattern"; then
+            echo "Pattern found after ${elapsed}s"
+            return 0
+        fi
+
+        sleep "$interval"
+        elapsed=$(echo "$elapsed + $interval" | bc -l)
+    done
+
+    echo "Timeout after ${timeout}s waiting for pattern: $pattern" >&2
+    return 3
+}
+
+cmd_kill() {
+    local name="${1:-}"
+
+    if [[ -z "$name" ]]; then
+        echo "Error: kill requires <name>" >&2
+        return 4
+    fi
+
+    local session
+    session=$(session_name "$name")
+
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        echo "Error: Session '$name' not found" >&2
+        return 2
+    fi
+
+    tmux kill-session -t "$session"
+    local rc=$?
+
+    if [[ $rc -eq 0 ]]; then
+        echo "Killed session: $name"
+    fi
+    return $rc
+}
+
+cmd_list() {
+    echo "Active pty-session sessions:"
+    tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${PREFIX}" | sed "s/^${PREFIX}/  /" || echo "  (none)"
+}
+
+# Main dispatch
+case "${1:-}" in
+    create)
+        shift
+        cmd_create "$@"
+        ;;
+    send)
+        shift
+        cmd_send "$@"
+        ;;
+    read)
+        shift
+        cmd_read "$@"
+        ;;
+    wait)
+        shift
+        cmd_wait "$@"
+        ;;
+    kill)
+        shift
+        cmd_kill "$@"
+        ;;
+    list)
+        cmd_list
+        ;;
+    help|--help|-h|"")
+        usage
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        echo "Run 'pty-session help' for usage" >&2
+        exit 4
+        ;;
+esac
