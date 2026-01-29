@@ -423,3 +423,28 @@ Pattern matching needed to detect this format, not just text patterns.
 
 All P0 and P1 investigation dispatch tests pass.
 
+## 29-01-2026 (Continued) - P2 Adversarial Tests Complete
+
+### Tests Implemented
+
+P2 adversarial tests verify wrong behaviours do NOT occur:
+
+| Test | Purpose | Result |
+|------|---------|--------|
+| `test_investigation_adv_no_normal.sh` | File at root should NOT produce normal review | PASS |
+| `test_investigation_adv_no_silent.sh` | File in subdirectory should NOT silently proceed | PASS |
+
+### Key Design Decision
+
+Switched from AI evaluation to direct pattern matching for adversarial tests. The evaluator Claude was reasoning about meta-context rather than evaluating the output. Direct grep patterns are more reliable for checking presence/absence of specific output formats.
+
+### Investigation Dispatch Test Matrix (Final)
+
+| Priority | Scenario | Confirmational Test | Adversarial Test |
+|----------|----------|---------------------|------------------|
+| P0 | Branch `investigation/*` | test_investigation_branch.sh ✓ | test_investigation_adversarial.sh ✓ |
+| P1 | File at root | test_investigation_file.sh ✓ | test_investigation_adv_no_normal.sh ✓ |
+| P1 | File in subdirectory | test_investigation_ask.sh ✓ | test_investigation_adv_no_silent.sh ✓ |
+
+All investigation dispatch tests complete and passing.
+

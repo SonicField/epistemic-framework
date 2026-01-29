@@ -54,6 +54,8 @@ cd tests/automated
 ./test_investigation_file.sh
 ./test_investigation_ask.sh
 ./test_investigation_adversarial.sh
+./test_investigation_adv_no_normal.sh
+./test_investigation_adv_no_silent.sh
 ./test_pty_session_basic.sh
 ./test_pty_session_wait.sh
 ./test_pty_session_timeout.sh
@@ -76,6 +78,8 @@ cd tests/automated
 | `test_investigation_file.sh` | Tests dispatch via INVESTIGATION-STATUS.md at root (P1) | Fails if file not detected or normal review produced |
 | `test_investigation_ask.sh` | Tests ask behaviour when file in subdirectory (P1) | Fails if AI proceeds without asking |
 | `test_investigation_adversarial.sh` | Tests NO investigation dispatch without markers (P0) | Fails if investigation review incorrectly triggered |
+| `test_investigation_adv_no_normal.sh` | Tests file at root does NOT produce normal review (P2) | Fails if normal review produced instead of investigation review |
+| `test_investigation_adv_no_silent.sh` | Tests file in subdirectory does NOT silently proceed (P2) | Fails if AI produces complete review without asking |
 | `test_pty_session_basic.sh` | Tests pty-session create/send/read/kill cycle | Fails if any operation errors |
 | `test_pty_session_wait.sh` | Tests pty-session wait pattern detection | Fails if wait doesn't detect pattern |
 | `test_pty_session_timeout.sh` | Tests pty-session wait timeout | Fails if timeout doesn't work |
