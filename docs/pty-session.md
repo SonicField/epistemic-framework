@@ -124,6 +124,17 @@ pty-session kill pyrepl
 
 ## Important Notes
 
+### Security Implications
+
+pty-session creates a fresh login shell with full user permissions. Commands run through pty-session inherit the user's complete environment and capabilities, not the sandboxed context of Claude's Bash tool.
+
+This means:
+- Environment variables (like proxy settings) may differ from the Bash tool context
+- Commands that fail in Bash due to sandbox restrictions may succeed via pty-session
+- Claude can effectively do anything the user can do through their terminal
+
+This is powerful but requires trust. The tool exists for legitimate automation (testing, REPLs, interactive programs). It should not be used to circumvent intended safety measures.
+
 ### Session Isolation
 
 All sessions are prefixed with `pty_` internally. They do not interfere with your personal tmux sessions.
