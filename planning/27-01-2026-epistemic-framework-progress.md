@@ -448,3 +448,27 @@ Switched from AI evaluation to direct pattern matching for adversarial tests. Th
 
 All investigation dispatch tests complete and passing.
 
+## 29-01-2026 (Continued) - Testing Infrastructure Documentation
+
+### Documents Created
+
+| Document | Purpose |
+|----------|---------|
+| `docs/pty-session.md` | Reference for the pty-session terminal session manager |
+| `docs/interactive-testing.md` | Guide for multi-turn Claude testing, including gotchas |
+| `docs/testing-strategy.md` | Overall philosophy: AI-evaluates-AI, adversarial testing, test isolation |
+
+### README Updated
+
+- Added Testing section after Tools
+- Added new docs to Documentation section
+
+### Key Concepts Documented
+
+- Trust prompt handling (Claude asks "Do you trust..." in new directories)
+- AskUserQuestion renders as selection UI, not plain text
+- Meta-context pollution: AI can reason about visible test infrastructure
+- Epistemic isolation: test scenarios must be indistinguishable from real use
+- Adversarial testing pairs: confirmational + adversarial for complete coverage
+- Direct pattern matching vs AI evaluation trade-offs
+

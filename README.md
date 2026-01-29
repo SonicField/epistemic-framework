@@ -6,7 +6,10 @@ A framework for honest collaboration between humans and AI systems.
 
 - [Overview](docs/overview.md) - Why this exists and how it works
 - [Getting Started](docs/getting-started.md) - Installation and first use
-- [Style Guide](docs/STYLE.md) - Internal reference for AI writing these materials (not for human contributors)
+- [Testing Strategy](docs/testing-strategy.md) - AI-evaluates-AI testing approach
+- [Interactive Testing](docs/interactive-testing.md) - Multi-turn testing with pty-session
+- [pty-session Reference](docs/pty-session.md) - Terminal session manager for automation
+- [Style Guide](docs/STYLE.md) - Internal reference for AI writing these materials
 
 ## Examples
 
@@ -52,6 +55,16 @@ Run this when you want to test a hypothesis before committing to a direction. Cr
 ### Verification Commands
 
 - [/epistemic-discovery-verify](claude_tools/epistemic-discovery-verify.md) - Verify discovery report completeness (auto-dispatched by /epistemic)
+
+## Testing
+
+The framework includes automated tests using a novel AI-evaluates-AI approach.
+
+- [Testing Strategy](docs/testing-strategy.md) - Philosophy, adversarial testing, test isolation
+- [Interactive Testing](docs/interactive-testing.md) - Using pty-session for multi-turn tests
+- [pty-session Reference](docs/pty-session.md) - Interactive terminal session manager
+
+See [tests/README.md](tests/README.md) for running tests.
 
 ## Planning
 
