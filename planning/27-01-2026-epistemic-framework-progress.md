@@ -283,3 +283,40 @@ See `28-01-2026-investigation-testing-plan.md` for systematic approach:
 3. Run tests and iterate
 4. Push to remote
 
+## 28-01-2026 (Continued) - P0 Tests Passing
+
+### Problem Solved
+
+The key issue was **meta-context pollution**: when running tests in the framework repo itself, the AI being tested could see test infrastructure files, plans about testing dispatch, and other context that caused it to reason about the meta-situation rather than follow detection logic.
+
+### Solution: Isolated Test Repos
+
+Rewrote `test_investigation_branch.sh` to create an isolated temporary git repo:
+- Fresh git repo in `/tmp/`
+- Minimal project structure with `concepts/goals.md`
+- `INVESTIGATION-STATUS.md` with realistic investigation content
+- `investigation/*` branch created before test
+
+This removes the meta-context that was confusing the AI.
+
+### P0 Tests Complete
+
+| Test | Result | Notes |
+|------|--------|-------|
+| `test_investigation_branch.sh` | PASS | Detects branch, produces investigation review |
+| `test_investigation_adversarial.sh` | PASS | No markers → normal review |
+
+### Command Updates
+
+Updated `claude_tools/epistemic.md`:
+- Added dispatch table at top for clarity
+- Made `investigation/*` branch explicitly UNAMBIGUOUS (no confirmation needed)
+- Separated branch detection from file detection logic
+- Clarified expected output format for investigation review
+
+### Remaining
+
+- P1 tests: File at repo root, File in subdirectory → ask
+- P2 tests: Full adversarial matrix
+- Commit and push
+

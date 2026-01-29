@@ -49,15 +49,15 @@ Each test has explicit pass/fail criteria:
 
 ## Implementation Order
 
-1. [ ] Create test scenarios in `tests/automated/scenarios/`
-2. [ ] Write `test_investigation_dispatch_branch.sh` (cleanest case - branch name)
-3. [ ] Write adversarial counterpart
+1. [x] Create test scenarios in `tests/automated/scenarios/`
+2. [x] Write `test_investigation_branch.sh` (cleanest case - isolated repo approach)
+3. [x] Write adversarial counterpart (`test_investigation_adversarial.sh`)
 4. [ ] Write `test_investigation_dispatch_file.sh` (file at repo root)
 5. [ ] Write adversarial counterpart
 6. [ ] Write `test_investigation_ask.sh` (file in subdirectory)
 7. [ ] Write adversarial counterpart
 8. [ ] Run full test suite
-9. [ ] Update progress log
+9. [x] Update progress log
 10. [ ] Commit
 
 ---

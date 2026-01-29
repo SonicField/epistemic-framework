@@ -14,7 +14,14 @@ Before doing ANYTHING else, run these detection checks:
 2. Glob pattern: **/INVESTIGATION-STATUS.md
 ```
 
-If branch starts with `investigation/` OR if `INVESTIGATION-STATUS.md` exists at repo root → **STOP** and do an investigation review (see below), not a normal review.
+Dispatch based on results:
+
+| Condition | Action |
+|-----------|--------|
+| Branch starts with `investigation/` | **UNAMBIGUOUS** → Investigation review immediately. No confirmation. |
+| `INVESTIGATION-STATUS.md` at repo root | Investigation review |
+| `INVESTIGATION-STATUS.md` elsewhere only | Ask user to clarify |
+| Neither branch nor file found | Normal review |
 
 ---
 
@@ -28,19 +35,25 @@ You have access to the full conversation history. Use it.
 
 **You must run the detection checks above before proceeding.**
 
-### Investigation Context Detected
+### Investigation Branch Detected (Unambiguous Signal)
 
-If `INVESTIGATION-STATUS.md` was found at repo root or branch is `investigation/*`:
+If branch starts with `investigation/`:
 
-→ **Dispatch to investigation review**: Review the investigation work, not the main project. Check:
+→ **IMMEDIATELY produce investigation review. Do NOT ask for confirmation. Do NOT produce normal review.** The branch name is an unambiguous signal that investigation context is active.
+
+Review the investigation work:
 - Is the hypothesis clearly stated and falsifiable?
 - Are experiments designed with clear pass/fail criteria?
 - Are observations recorded (not just interpretations)?
-- Is the status document current?
+- Is the status document current (read INVESTIGATION-STATUS.md if it exists)?
 
-Produce a short review of investigation rigour. **Do NOT produce a normal project review.**
+**Output format**: Short review of investigation rigour. NOT Status/Issues/Recommendations format.
 
-### If `INVESTIGATION-STATUS.md` Found Elsewhere (not repo root)
+### INVESTIGATION-STATUS.md at Repo Root (No Investigation Branch)
+
+Same as above - produce investigation review.
+
+### INVESTIGATION-STATUS.md Found Elsewhere Only (Not Repo Root, Not Investigation Branch)
 
 Ask the user:
 > "I found an INVESTIGATION-STATUS.md file at [path]. Are you currently in an investigation, or is this a test fixture / old file?"
