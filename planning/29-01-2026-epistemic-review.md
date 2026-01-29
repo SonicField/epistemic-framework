@@ -75,27 +75,28 @@
 
 ### Strategic
 
-1. **Decide: Is AI teams in scope for epistemic-framework?**
-   - *Falsification*: If AI teams belongs elsewhere, the planning docs should move and the framework should not evolve to support it
-   - Current state implies yes, but this should be explicit
+1. **AI teams scope** - RESOLVED
+   - AI teams is part of epistemic-framework for now
+   - May refactor into subprojects later, but not blocking
 
-2. **Create security.md before public release**
+2. **Create security.md before public release** - BLOCKING
    - *Falsification*: If security.md cannot be written honestly without causing problems, the framework may not be releasable in current form
-   - Already noted in kickoff doc, but needs tracking
+   - Must cover: trust model, permissions reality, alignment vs enforcement, user responsibilities
+   - Requires careful framing to be honest without providing exploitation guidance
 
 ### Tactical
 
-1. **Update progress log with today's work**
-   - Evidence: Add section covering AI teams prototype, security analysis, learnings
-   - *Falsification*: If the work can't be summarised coherently, scope may have drifted too far
+1. **Update progress log with today's work** - DONE
+   - Added AI teams prototype, security analysis, learnings to progress log
 
-2. **Document the dialogue.md protocol formally**
-   - If this is a reusable pattern for Claude-to-Claude collaboration, document it
-   - *Falsification*: If it only works for this specific case, don't generalise prematurely
+2. **Document the dialogue.md protocol formally** - DEFERRED
+   - Current decision: ad-hoc for now, do not formalise prematurely
+   - *Falsification*: If it only works for this specific case, generalising would be over-engineering
 
-3. **Clarify parallel-depickle relationship**
-   - Is parallel-depickle a test case for AI teams, or are the two projects now coupled?
-   - *Falsification*: Try using AI teams on a different project; if it requires parallel-depickle-specific knowledge, coupling is too tight
+3. **Clarify parallel-depickle relationship** - RESOLVED
+   - parallel-depickle is a learning opportunity, not a test case
+   - NOT coupled to ai-teams or epistemic-framework
+   - The `.epistemic/` structure there is independent experimentation
 
 ## Files created/modified this session
 
