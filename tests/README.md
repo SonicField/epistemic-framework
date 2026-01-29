@@ -51,8 +51,14 @@ cd tests/automated
 ./test_epistemic_dispatch.sh
 ./test_dispatch_adversarial.sh
 ./test_investigation_branch.sh
-./test_investigation_dispatch.sh
+./test_investigation_file.sh
+./test_investigation_ask.sh
 ./test_investigation_adversarial.sh
+./test_pty_session_basic.sh
+./test_pty_session_wait.sh
+./test_pty_session_timeout.sh
+./test_pty_session_adv_no_collision.sh
+./test_pty_session_adv_invalid.sh
 ./test_evaluator_catches_bad.sh
 ```
 
@@ -67,8 +73,14 @@ cd tests/automated
 | `test_epistemic_dispatch.sh` | Tests dispatch to verification after discovery | Fails if normal review produced instead of verification |
 | `test_dispatch_adversarial.sh` | Tests NO dispatch without discovery context | Fails if verification mode incorrectly triggered |
 | `test_investigation_branch.sh` | Tests dispatch via investigation/* branch (P0) | Fails if branch not detected or normal review produced |
-| `test_investigation_dispatch.sh` | Tests dispatch via INVESTIGATION-STATUS.md file | Fails if normal review produced instead of investigation review |
+| `test_investigation_file.sh` | Tests dispatch via INVESTIGATION-STATUS.md at root (P1) | Fails if file not detected or normal review produced |
+| `test_investigation_ask.sh` | Tests ask behaviour when file in subdirectory (P1) | Fails if AI proceeds without asking |
 | `test_investigation_adversarial.sh` | Tests NO investigation dispatch without markers (P0) | Fails if investigation review incorrectly triggered |
+| `test_pty_session_basic.sh` | Tests pty-session create/send/read/kill cycle | Fails if any operation errors |
+| `test_pty_session_wait.sh` | Tests pty-session wait pattern detection | Fails if wait doesn't detect pattern |
+| `test_pty_session_timeout.sh` | Tests pty-session wait timeout | Fails if timeout doesn't work |
+| `test_pty_session_adv_no_collision.sh` | Tests pty-session isolation from user sessions | Fails if user sessions affected |
+| `test_pty_session_adv_invalid.sh` | Tests pty-session error handling | Fails if invalid input crashes |
 | `test_evaluator_catches_bad.sh` | Meta-test: evaluator catches bad reports | Fails if evaluator passes a known-bad report |
 
 ### Scenarios

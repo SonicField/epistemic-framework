@@ -387,3 +387,39 @@ Wrote this up as `~/docs/ai-meta-reasoning-in-testing.md`.
 
 Side quest complete. Can now return to investigation dispatch testing with the ability to properly test interactive "ask user" behaviour.
 
+## 29-01-2026 (Continued) - Investigation Dispatch Tests Complete
+
+### P1 Tests Implemented
+
+Used `pty-session` to properly test the interactive "ask user" behaviour.
+
+| Test | Method | Result |
+|------|--------|--------|
+| `test_investigation_file.sh` | `claude -p` with isolated repo | PASS |
+| `test_investigation_ask.sh` | `pty-session` interactive | PASS |
+
+### Key Discovery: AskUserQuestion Rendering
+
+AskUserQuestion in Claude Code renders as a selection UI:
+```
+☐ Investigation?
+
+I found an INVESTIGATION-STATUS.md file at...
+
+❯ 1. Active investigation
+  2. Test fixture / old file
+```
+
+Pattern matching needed to detect this format, not just text patterns.
+
+### Test Matrix Complete
+
+| Scenario | Test | Result |
+|----------|------|--------|
+| Branch `investigation/*` | test_investigation_branch.sh | PASS |
+| File at repo root | test_investigation_file.sh | PASS |
+| File in subdirectory | test_investigation_ask.sh | PASS |
+| No markers | test_investigation_adversarial.sh | PASS |
+
+All P0 and P1 investigation dispatch tests pass.
+
