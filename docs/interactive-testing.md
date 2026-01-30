@@ -164,4 +164,3 @@ trap cleanup EXIT
 
 - [pty-session Reference](pty-session.md) - Command reference
 - [Testing Strategy](testing-strategy.md) - Overall approach
-- [Meta-Context Pollution](~/docs/ai-meta-reasoning-in-testing.md) - Detailed analysis

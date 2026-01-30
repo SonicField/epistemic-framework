@@ -167,6 +167,71 @@ This applies to workers too. Supervisor should periodically run /epistemic on wo
 
 ---
 
+## Task Scope (Added 30-01-2026)
+
+### Micromanagement is the anti-pattern
+
+**Wrong:**
+```
+Worker 1: Implement function parse_int()
+Worker 2: Implement function parse_string()
+Worker 3: Implement function parse_block()
+...
+```
+
+**Right:**
+```
+Worker 1: Implement the parser. Pass all 84 tests in test_parser.py.
+```
+
+### Why micromanagement doesn't scale
+
+| Approach | Supervisor work | Worker autonomy | Scalability |
+|----------|-----------------|-----------------|-------------|
+| Micromanage | High (designs everything) | Low (just types code) | O(n) - supervisor bottleneck |
+| Delegate | Low (sets goal, reviews) | High (figures out approach) | O(1) - workers parallelise |
+
+When the supervisor writes detailed implementation steps, the supervisor is doing the architecture. Workers become typists. This doesn't scale - the supervisor becomes the bottleneck.
+
+### Task tool enables the anti-pattern
+
+The Task tool (synchronous subagents) makes micromanagement easy:
+- Quick to spawn narrow tasks
+- Tempting to "peek" at progress and intervene
+- Feels productive but creates supervisor overhead
+
+pty-session workers force proper delegation:
+- Truly independent session
+- Cannot easily intervene mid-task
+- Must trust workers with larger scope
+
+### Correct task scope
+
+| Level | Example | Appropriate? |
+|-------|---------|--------------|
+| Function | "Implement parse_int()" | ✗ Too narrow |
+| Feature | "Implement path parsing" | ✗ Still narrow |
+| Phase | "Complete the parser" | ✓ Correct |
+| Project | "Reimplement lexer/parser in C" | ✓ If worker can handle |
+
+**Rule of thumb:** If you're writing detailed implementation steps in the task file, the scope is too narrow.
+
+### Success criteria = test suite
+
+Define success by outcomes, not process:
+- "Pass all 84 tests in test_parser.py" ✓
+- "Implement STRING handling with escape parsing" ✗
+
+Let workers figure out their own breakdown. They have fresh context and can apply judgement.
+
+### Evidence from C implementation project
+
+- Micromanaged approach: 8+ narrow worker tasks for lexer + parser
+- Proper delegation: 2 workers (one for lexer, one for parser)
+- Result: Parser completed in ~2 minutes with proper delegation vs projected 30+ minutes of supervisor overhead with micromanagement
+
+---
+
 ## Open Questions
 
 1. **Permission injection**: Should supervisor programmatically add permissions to settings.json, or document as manual setup?
