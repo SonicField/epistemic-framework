@@ -1,0 +1,15 @@
+# Decisions Log
+
+Append-only record of supervisor decisions.
+
+Format:
+```
+---
+[YYYY-MM-DD HH:MM] DECISION TITLE
+Context: Why this decision was needed
+Decision: What was decided
+Implication: What this means for the work
+AI Teams learning: (optional) What we learned about the process
+```
+
+---
