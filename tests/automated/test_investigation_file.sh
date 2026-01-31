@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test: /epistemic dispatches to investigation review when INVESTIGATION-STATUS.md at repo root
+# Test: /nbs dispatches to investigation review when INVESTIGATION-STATUS.md at repo root
 #
 # This tests file-based detection (no investigation branch).
 # Uses isolated repo to avoid meta-context pollution.
@@ -14,18 +14,18 @@ EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Create isolated test environment
 TEST_REPO=$(mktemp -d)
-EPISTEMIC_OUTPUT=$(mktemp)
+NBS_OUTPUT=$(mktemp)
 EVAL_TEMP=$(mktemp)
 VERDICT_FILE="$SCRIPT_DIR/verdicts/investigation_file_verdict.json"
 
 # shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {
-    rm -f "$EPISTEMIC_OUTPUT" "$EVAL_TEMP"
+    rm -f "$NBS_OUTPUT" "$EVAL_TEMP"
     rm -rf "$TEST_REPO"
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic Dispatch via INVESTIGATION-STATUS.md at Root ==="
+echo "=== Testing /nbs Dispatch via INVESTIGATION-STATUS.md at Root ==="
 echo "Isolated test repo: $TEST_REPO"
 echo ""
 
@@ -81,19 +81,19 @@ echo "Current branch: $(git branch --show-current)"
 echo "Branch is NOT investigation/* - testing file-based detection"
 echo ""
 
-# Step 1: Run /epistemic
-echo "Step 1: Running /epistemic..."
+# Step 1: Run /nbs
+echo "Step 1: Running /nbs..."
 
-EPISTEMIC_RESULT=$(claude -p "/epistemic" --output-format text 2>&1) || true
-echo "$EPISTEMIC_RESULT" > "$EPISTEMIC_OUTPUT"
+NBS_RESULT=$(claude -p "/nbs" --output-format text 2>&1) || true
+echo "$NBS_RESULT" > "$NBS_OUTPUT"
 
-echo "Epistemic command complete. Output saved."
+echo "NBS command complete. Output saved."
 echo ""
 
 # Step 2: Evaluate
 echo "Step 2: Evaluating for investigation dispatch..."
 
-EVAL_PROMPT="You are a test evaluator. Determine whether /epistemic correctly detected investigation context from INVESTIGATION-STATUS.md at repo root.
+EVAL_PROMPT="You are a test evaluator. Determine whether /nbs correctly detected investigation context from INVESTIGATION-STATUS.md at repo root.
 
 ## Setup
 - INVESTIGATION-STATUS.md exists at the repository root
@@ -102,7 +102,7 @@ EVAL_PROMPT="You are a test evaluator. Determine whether /epistemic correctly de
 - This tests file-based detection, not branch-based detection
 
 ## Expected Behaviour
-/epistemic should:
+/nbs should:
 1. Detect INVESTIGATION-STATUS.md at repo root
 2. Read its contents
 3. Produce an investigation review (NOT normal project review)
@@ -120,7 +120,7 @@ EVAL_PROMPT="You are a test evaluator. Determine whether /epistemic correctly de
 - Ignoring the INVESTIGATION-STATUS.md content
 
 ## Actual Output
-$EPISTEMIC_RESULT
+$NBS_RESULT
 
 ## Evaluation Criteria
 
@@ -173,12 +173,12 @@ echo "Details: $VERDICT_FILE"
 echo ""
 
 if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED: /epistemic correctly dispatched via INVESTIGATION-STATUS.md at root"
+    echo "TEST PASSED: /nbs correctly dispatched via INVESTIGATION-STATUS.md at root"
     exit 0
 else
-    echo "TEST FAILED: /epistemic did not dispatch despite INVESTIGATION-STATUS.md at root"
+    echo "TEST FAILED: /nbs did not dispatch despite INVESTIGATION-STATUS.md at root"
     echo ""
     echo "Raw output:"
-    head -80 "$EPISTEMIC_OUTPUT"
+    head -80 "$NBS_OUTPUT"
     exit 1
 fi

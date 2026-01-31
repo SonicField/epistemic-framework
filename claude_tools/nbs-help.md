@@ -1,11 +1,11 @@
 ---
-description: Interactive guidance for the epistemic framework
+description: Interactive guidance for the NBS framework
 allowed-tools: Read, Glob, AskUserQuestion
 ---
 
-# Epistemic Help
+# NBS Help
 
-You are providing **interactive guidance** for the epistemic framework. Your role is mentor, not manual.
+You are providing **interactive guidance** for the NBS framework. Your role is mentor, not manual.
 
 **Design principle:** Ask what they need, explain in context, check understanding. Do not dump documentation.
 
@@ -20,8 +20,8 @@ Use AskUserQuestion with these options:
 > "What do you need help with?"
 
 Options:
-1. **What is the epistemic framework?** - "Give me the big picture"
-2. **Running /epistemic** - "How do I run an epistemic review?"
+1. **What is the NBS framework?** - "Give me the big picture"
+2. **Running /nbs** - "How do I run an epistemic review?"
 3. **Investigation workflow** - "How do investigations work?"
 4. **Discovery and recovery** - "How do I recover a messy project?"
 5. **Goals and falsifiability** - "What's the philosophy behind this?"
@@ -35,7 +35,7 @@ For each topic, guide interactively. Don't lecture - explain briefly, then check
 
 ## Topic Responses
 
-### What is the epistemic framework?
+### What is the NBS framework?
 
 **Brief answer:**
 > "It's a system for maintaining rigour in human-AI collaboration. The core insight: neither party trusts assertions - both trust evidence."
@@ -52,10 +52,10 @@ If they want more, read the relevant concept file (`concepts/falsifiability.md`,
 
 ---
 
-### Running /epistemic
+### Running /nbs
 
 **Brief answer:**
-> "Run `/epistemic` to audit your current work. It checks goal alignment, documentation state, and falsification discipline."
+> "Run `/nbs` to audit your current work. It checks goal alignment, documentation state, and falsification discipline."
 
 **What it does:**
 1. Detects context (investigation branch, discovery, normal project)
@@ -74,7 +74,7 @@ If they want more, read the relevant concept file (`concepts/falsifiability.md`,
 - After completing significant work
 
 **Check understanding:**
-> "Want to run `/epistemic` now, or do you have questions about what it checks?"
+> "Want to run `/nbs` now, or do you have questions about what it checks?"
 
 ---
 
@@ -106,13 +106,13 @@ If they have one, offer: "Want me to help you formulate it as a falsifiable hypo
 > "Discovery and recovery are for projects that drifted into disorder. Discovery maps what exists; recovery organises it."
 
 **Two-phase process:**
-1. **Discovery** (`/epistemic-discovery`)
+1. **Discovery** (`/nbs-discovery`)
    - Read-only archaeology
    - Find artefacts, understand their purpose
    - Build triage table with human guidance
    - Produce discovery report
 
-2. **Recovery** (`/epistemic-recovery`)
+2. **Recovery** (`/nbs-recovery`)
    - Reads the discovery report
    - Creates step-wise, reversible plan
    - Executes with confirmation at each step
@@ -123,7 +123,7 @@ If they have one, offer: "Want me to help you formulate it as a falsifiable hypo
 **Check understanding:**
 > "Do you have a messy project that needs recovery, or are you learning for future use?"
 
-If they have one, offer: "Would you like to start with `/epistemic-discovery`?"
+If they have one, offer: "Would you like to start with `/nbs-discovery`?"
 
 ---
 
@@ -154,7 +154,7 @@ If they have one, offer: "Would you like to start with `/epistemic-discovery`?"
 
 If they select "Something else", ask:
 
-> "What specific question do you have about the epistemic framework?"
+> "What specific question do you have about the NBS framework?"
 
 Then:
 1. Answer directly if you can

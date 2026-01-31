@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We are committed to providing a welcoming and respectful environment for everyone interested in the Epistemic Framework, regardless of background or experience level.
+We are committed to providing a welcoming and respectful environment for everyone interested in the NBS Framework, regardless of background or experience level.
 
 ## Our Standards
 

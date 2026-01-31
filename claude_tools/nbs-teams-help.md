@@ -1,11 +1,11 @@
 ---
-description: Interactive guidance for AI teams usage
+description: Interactive guidance for NBS teams usage
 allowed-tools: Read, Glob, AskUserQuestion
 ---
 
-# AI Teams Help
+# NBS Teams Help
 
-You are providing **interactive guidance** for AI teams usage. Your role is mentor, not manual.
+You are providing **interactive guidance** for NBS teams usage. Your role is mentor, not manual.
 
 **Design principle:** Ask what they need, explain in context, check understanding. Do not dump documentation.
 
@@ -18,10 +18,10 @@ You are providing **interactive guidance** for AI teams usage. Your role is ment
 Before asking what they need help with, quickly check if they have an active project:
 
 ```
-Glob: .epistemic/**
+Glob: .nbs/**
 ```
 
-If `.epistemic/` exists, read `supervisor.md` to understand their current state. Reference their actual project in your explanations.
+If `.nbs/` exists, read `supervisor.md` to understand their current state. Reference their actual project in your explanations.
 
 ### Step 2: Ask What They Need
 
@@ -30,7 +30,7 @@ Use AskUserQuestion with these options:
 > "What do you need help with?"
 
 Options:
-1. **Starting a new project** - "I want to set up AI teams for a project"
+1. **Starting a new project** - "I want to set up NBS teams for a project"
 2. **Spawning workers** - "How do I create and run worker Claudes?"
 3. **Writing worker tasks** - "What should go in a worker task file?"
 4. **Task scope** - "How big should worker tasks be?"
@@ -49,7 +49,7 @@ For each topic, guide interactively. Don't lecture - explain briefly, then ask i
 ### Starting a new project
 
 **Brief answer:**
-> "Run `/start-ai-teams`. It asks for your terminal goal and creates the `.epistemic/` structure."
+> "Run `/start-nbs-teams`. It asks for your terminal goal and creates the `.nbs/` structure."
 
 **Check understanding:**
 > "Do you have a terminal goal in mind, or would you like help defining one?"
@@ -60,7 +60,7 @@ If they need help with terminal goals, explain:
 - Example: "Implement soma's lexer and parser as C Python extension modules, passing all existing tests"
 
 **Follow-up:**
-> "Ready to run `/start-ai-teams`, or do you have other questions?"
+> "Ready to run `/start-nbs-teams`, or do you have other questions?"
 
 ---
 
@@ -70,11 +70,11 @@ If they need help with terminal goals, explain:
 > "Workers are separate Claude instances you spawn with pty-session. You create a task file, then spawn the worker pointing at it."
 
 **Walk through:**
-1. Create task file in `.epistemic/workers/worker-<name>.md`
+1. Create task file in `.nbs/workers/worker-<name>.md`
 2. Spawn with:
    ```bash
    pty-session create worker-name 'cd /your/project && claude'
-   pty-session send worker-name 'Read .epistemic/workers/worker-name.md and execute the task.'
+   pty-session send worker-name 'Read .nbs/workers/worker-name.md and execute the task.'
    ```
 3. Monitor with: `pty-session read worker-name`
 4. When done: `pty-session kill worker-name`
@@ -207,7 +207,7 @@ Worker: Implement the parser. Pass all 84 tests.
 
 If they select "Something else", ask:
 
-> "What specific question do you have about AI teams?"
+> "What specific question do you have about NBS teams?"
 
 Then:
 1. Answer directly if you can
@@ -222,7 +222,7 @@ Then:
 - **One concept at a time.** Don't overwhelm with information.
 - **Use their context.** If they have an active project, reference it.
 - **Check understanding.** Ask if they need more detail or have follow-ups.
-- **Direct to skills.** If they need action (not guidance), point them to `/start-ai-teams` or the supervisor/worker docs.
+- **Direct to skills.** If they need action (not guidance), point them to `/start-nbs-teams` or the supervisor/worker docs.
 
 ---
 

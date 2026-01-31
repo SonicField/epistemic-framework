@@ -1,13 +1,13 @@
 ---
-description: Bootstrap a project for AI teams in one command
+description: Bootstrap a project for NBS teams in one command
 allowed-tools: Write, AskUserQuestion, Bash(mkdir:*)
 ---
 
-# Start AI Teams
+# Start NBS Teams
 
-You are bootstrapping a project for AI teams. This creates the minimal structure needed to start working with supervisor/worker patterns.
+You are bootstrapping a project for NBS teams. This creates the minimal structure needed to start working with supervisor/worker patterns.
 
-**This is a one-time setup command.** If `.epistemic/` already exists, confirm before overwriting.
+**This is a one-time setup command.** If `.nbs/` already exists, confirm before overwriting.
 
 ---
 
@@ -15,14 +15,14 @@ You are bootstrapping a project for AI teams. This creates the minimal structure
 
 ### Step 1: Check for Existing Structure
 
-Before anything, check if `.epistemic/` exists:
+Before anything, check if `.nbs/` exists:
 
 ```bash
-ls -la .epistemic/ 2>/dev/null
+ls -la .nbs/ 2>/dev/null
 ```
 
 **If it exists:**
-- Ask: "An .epistemic/ directory already exists. Would you like to reset it? This will overwrite supervisor.md and decisions.log."
+- Ask: "An .nbs/ directory already exists. Would you like to reset it? This will overwrite supervisor.md and decisions.log."
 - If no, stop. If yes, proceed.
 
 ### Step 2: Ask Terminal Goal
@@ -39,15 +39,15 @@ Wait for their answer. This becomes the foundation of the supervisor document.
 
 ### Step 3: Create Directory Structure
 
-Create the `.epistemic/` directory and `workers/` subdirectory:
+Create the `.nbs/` directory and `workers/` subdirectory:
 
 ```bash
-mkdir -p .epistemic/workers
+mkdir -p .nbs/workers
 ```
 
 ### Step 4: Create supervisor.md
 
-Write `.epistemic/supervisor.md` using this template, inserting the user's terminal goal:
+Write `.nbs/supervisor.md` using this template, inserting the user's terminal goal:
 
 ```markdown
 # Supervisor: [Project Name from terminal goal]
@@ -68,7 +68,7 @@ Workers since last check: 0
 
 ## Decisions Log
 
-See `.epistemic/decisions.log`
+See `.nbs/decisions.log`
 
 ---
 
@@ -104,7 +104,7 @@ Template for each entry:
 
 ### Step 5: Create decisions.log
 
-Write `.epistemic/decisions.log`:
+Write `.nbs/decisions.log`:
 
 ```markdown
 # Decisions Log
@@ -126,19 +126,19 @@ Tell the user what was created:
 
 ```
 Created:
-- .epistemic/supervisor.md (your state and learnings)
-- .epistemic/decisions.log (append-only decision record)
-- .epistemic/workers/ (worker task files go here)
+- .nbs/supervisor.md (your state and learnings)
+- .nbs/decisions.log (append-only decision record)
+- .nbs/workers/ (worker task files go here)
 
 You are now the supervisor. Your terminal goal is recorded.
 
 Next steps:
-1. Read claude_tools/ai-teams-supervisor.md to understand your role
+1. Read claude_tools/nbs-teams-supervisor.md to understand your role
 2. Decompose your goal into worker tasks
-3. Create worker task files in .epistemic/workers/
+3. Create worker task files in .nbs/workers/
 4. Spawn workers and capture learnings
 
-Run /ai-teams-help if you need guidance on any of these.
+Run /nbs-teams-help if you need guidance on any of these.
 ```
 
 ---
@@ -147,7 +147,7 @@ Run /ai-teams-help if you need guidance on any of these.
 
 - **One question, one action, confirmation.** This is not a wizard that asks 10 questions upfront.
 - **Terminal goal is mandatory.** Do not create structure without it.
-- **Confirm before overwriting.** Existing `.epistemic/` directories contain valuable state.
+- **Confirm before overwriting.** Existing `.nbs/` directories contain valuable state.
 - **Explain what was created.** The user should understand the structure.
 
 ---
@@ -155,9 +155,9 @@ Run /ai-teams-help if you need guidance on any of these.
 ## What Happens Next
 
 The user is now the supervisor. They should:
-1. Read `ai-teams-supervisor.md` to understand their role
+1. Read `nbs-teams-supervisor.md` to understand their role
 2. Decompose work into worker tasks
 3. Use pty-session to spawn worker Claudes
 4. Capture 3Ws after each worker completes
 
-If they need help, they run `/ai-teams-help`.
+If they need help, they run `/nbs-teams-help`.

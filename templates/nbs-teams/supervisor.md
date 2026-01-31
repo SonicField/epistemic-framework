@@ -16,7 +16,7 @@ Workers since last check: 0
 
 ## Decisions Log
 
-See `.epistemic/decisions.log`
+See `.nbs/decisions.log`
 
 ---
 

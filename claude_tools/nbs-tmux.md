@@ -86,7 +86,7 @@ pty-session create test_claude 'claude'
 pty-session wait test_claude '❯' --timeout=30
 
 # Send command
-pty-session send test_claude '/epistemic'
+pty-session send test_claude '/nbs'
 
 # Wait for and detect AskUserQuestion
 pty-session wait test_claude 'investigation' --timeout=120
@@ -160,6 +160,6 @@ pty-session kill build
 
 ## Location
 
-The `pty-session` script is at: `~/claude_docs/epistemic-framework/bin/pty-session`
+The `pty-session` script is at: `~/claude_docs/nbs-framework/bin/pty-session`
 
 Ensure it's in your PATH or use the full path.

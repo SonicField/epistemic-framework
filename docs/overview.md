@@ -45,16 +45,16 @@ Claude Code slash commands that apply these principles:
 
 | Command | Purpose |
 |---------|---------|
-| `/epistemic` | Review and dispatch - detects context, routes to appropriate verification |
-| `/start-ai-teams` | Bootstrap project for AI teams (creates `.epistemic/` structure) |
-| `/ai-teams-help` | Interactive guidance for AI teams usage |
-| `/epistemic-help` | Interactive guidance for the epistemic framework |
-| `/epistemic-discovery` | Read-only archaeology of a messy project |
-| `/epistemic-discovery-verify` | Verify discovery report is complete (auto-dispatched) |
-| `/epistemic-recovery` | Step-wise restructuring with confirmation |
-| `/epistemic-investigation` | Hypothesis testing through isolated experiments |
+| `/nbs` | Review and dispatch - detects context, routes to appropriate verification |
+| `/start-nbs-teams` | Bootstrap project for NBS teams (creates `.nbs/` structure) |
+| `/nbs-teams-help` | Interactive guidance for NBS teams usage |
+| `/nbs-help` | Interactive guidance for the NBS framework |
+| `/nbs-discovery` | Read-only archaeology of a messy project |
+| `/nbs-discovery-verify` | Verify discovery report is complete (auto-dispatched) |
+| `/nbs-recovery` | Step-wise restructuring with confirmation |
+| `/nbs-investigation` | Hypothesis testing through isolated experiments |
 
-The dispatch design keeps one entry point (`/epistemic`) while allowing context-specific verification. Run `/epistemic` after discovery and it verifies the report. Run it after recovery and it reviews the work. Run it mid-session and it audits for drift.
+The dispatch design keeps one entry point (`/nbs`) while allowing context-specific verification. Run `/nbs` after discovery and it verifies the report. Run it after recovery and it reviews the work. Run it mid-session and it audits for drift.
 
 ### 3. Testing
 
@@ -66,7 +66,7 @@ Tests that evaluate AI output using AI, with human-verifiable verdicts. Non-dete
 
 The framework does not enforce rules. It prompts questions.
 
-When you run `/epistemic`, the AI reads the foundation document. If ambiguity arises, it reads the relevant pillar. It then produces a short report surfacing:
+When you run `/nbs`, the AI reads the foundation document. If ambiguity arises, it reads the relevant pillar. It then produces a short report surfacing:
 
 - Terminal goal status (clear? drifted? abandoned?)
 - Instrumental goal coherence (sequenced or scattered?)
@@ -76,9 +76,9 @@ When you run `/epistemic`, the AI reads the foundation document. If ambiguity ar
 
 The human reads the report and decides what to do. The AI proposes; the human disposes.
 
-For messy projects, `/epistemic-discovery` maps what exists before any changes. The human provides context the files cannot. The output is a discovery report - a triage table of artefacts with verdicts.
+For messy projects, `/nbs-discovery` maps what exists before any changes. The human provides context the files cannot. The output is a discovery report - a triage table of artefacts with verdicts.
 
-Then `/epistemic-recovery` creates a step-wise plan. Each step is atomic, reversible, described. The human confirms each step before execution. Nothing is deleted without explicit approval.
+Then `/nbs-recovery` creates a step-wise plan. Each step is atomic, reversible, described. The human confirms each step before execution. Nothing is deleted without explicit approval.
 
 ---
 

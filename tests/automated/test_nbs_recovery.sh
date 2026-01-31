@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test: /epistemic-recovery produces a valid recovery plan
+# Test: /nbs-recovery produces a valid recovery plan
 #
 # This test provides a mock discovery report and verifies that
 # recovery produces a structured, step-wise plan.
@@ -25,7 +25,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic-recovery (plan generation) ==="
+echo "=== Testing /nbs-recovery (plan generation) ==="
 echo "Scenario: $SCENARIO_DIR"
 echo "Discovery report: $MOCK_REPORT"
 echo ""
@@ -33,7 +33,7 @@ echo ""
 # Step 1: Run recovery to generate plan only
 echo "Step 1: Running recovery command (plan generation)..."
 
-RECOVERY_PROMPT="Run /epistemic-recovery on this project: $SCENARIO_DIR
+RECOVERY_PROMPT="Run /nbs-recovery on this project: $SCENARIO_DIR
 
 The discovery report is at: $MOCK_REPORT
 

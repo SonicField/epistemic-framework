@@ -2,11 +2,11 @@
 
 ## Description
 
-A minimal project with obvious epistemic failures. Used to test whether `/epistemic` correctly identifies known issues.
+A minimal project with obvious NBS failures. Used to test whether `/nbs` correctly identifies known issues.
 
 ## Known Issues (Ground Truth)
 
-The evaluator must check whether the `/epistemic` output identifies these:
+The evaluator must check whether the `/nbs` output identifies these:
 
 | Issue | Must Identify | Acceptable Variations |
 |-------|---------------|----------------------|

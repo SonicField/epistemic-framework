@@ -1,6 +1,6 @@
 # Testing Strategy
 
-This document explains the testing philosophy and approach used in the epistemic framework.
+This document explains the testing philosophy and approach used in the NBS framework.
 
 ## The Problem
 
@@ -18,7 +18,7 @@ A second AI instance evaluates the output against explicit criteria.
 
 ```bash
 # Run the command
-RESULT=$(claude -p "/epistemic" --output-format text)
+RESULT=$(claude -p "/nbs" --output-format text)
 
 # Evaluate with a second AI
 EVAL_PROMPT="Evaluate this output against these criteria..."

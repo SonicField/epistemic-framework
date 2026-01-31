@@ -3,13 +3,13 @@ description: Collaborative discovery of artefacts in projects lacking epistemic 
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(find:*), Bash(ls:*), Bash(git log:*)
 ---
 
-# Epistemic Discovery
+# NBS Discovery
 
-You are conducting an **epistemic discovery** - a collaborative, read-only process to understand a project that was developed without epistemic discipline, or has drifted into disorder.
+You are conducting an **NBS discovery** - a collaborative, read-only process to understand a project that was developed without epistemic discipline, or has drifted into disorder.
 
 This is **archaeology with a living witness**. The human has context you cannot infer. Ask constantly. Confirm before concluding.
 
-**This command makes no changes.** It produces a discovery report. When the human is ready to act on findings, they run `/epistemic-recovery`.
+**This command makes no changes.** It produces a discovery report. When the human is ready to act on findings, they run `/nbs-recovery`.
 
 ---
 
@@ -163,10 +163,10 @@ For each gap question, preserve the confirmed restatement in full. These are ver
 [What remains uncertain - needs human input or further investigation]
 
 ## Recommended Next Steps
-[What /epistemic-recovery should do - but no action taken yet]
+[What /nbs-recovery should do - but no action taken yet]
 ```
 
-**Note**: The discovery report is the sole input to `/epistemic-recovery`. Everything recovery needs must be in this report. Do not rely on conversation history or external logs.
+**Note**: The discovery report is the sole input to `/nbs-recovery`. Everything recovery needs must be in this report. Do not rely on conversation history or external logs.
 
 ---
 
@@ -184,7 +184,7 @@ For each gap question, preserve the confirmed restatement in full. These are ver
 
 After discovery, the human reviews the report. When ready:
 
-1. Run `/epistemic-recovery`
+1. Run `/nbs-recovery`
 2. That command reads the discovery report
 3. Creates a step-wise, reversible plan
 4. Executes with confirmation at each step

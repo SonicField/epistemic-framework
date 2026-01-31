@@ -3,9 +3,9 @@ description: Verify discovery report completeness before recovery
 allowed-tools: Read, Glob, Grep, AskUserQuestion
 ---
 
-# Epistemic Discovery Verification
+# NBS Discovery Verification
 
-You have just completed `/epistemic-discovery`. Before the human proceeds to recovery, verify that the discovery report is complete and captures everything discussed.
+You have just completed `/nbs-discovery`. Before the human proceeds to recovery, verify that the discovery report is complete and captures everything discussed.
 
 **This is a checkpoint, not a redo.** You're checking your own work.
 
@@ -88,6 +88,6 @@ If issues were found, update the discovery report before declaring it ready.
 
 ## The Contract
 
-The discovery report is the **sole input** to `/epistemic-recovery`. Everything recovery needs must be in that report. This verification ensures nothing is lost between discovery and recovery.
+The discovery report is the **sole input** to `/nbs-recovery`. Everything recovery needs must be in that report. This verification ensures nothing is lost between discovery and recovery.
 
 _Check your work. The human trusted you with their knowledge. Make sure it's captured._

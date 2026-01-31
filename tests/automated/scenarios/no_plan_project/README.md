@@ -1,10 +1,10 @@
 # No Plan Project
 
-A test scenario with obvious epistemic failures. The /epistemic command should flag these.
+A test scenario with obvious NBS failures. The /nbs command should flag these.
 
 ## Expected Issues
 
-When /epistemic reviews this project, it should identify:
+When /nbs reviews this project, it should identify:
 
 1. No plan file exists
 2. No progress log exists
@@ -12,6 +12,6 @@ When /epistemic reviews this project, it should identify:
 
 ## What This Tests
 
-- Does /epistemic detect missing documentation?
+- Does /nbs detect missing documentation?
 - Does it ask about terminal goals when unclear?
 - Is the output concise and actionable?

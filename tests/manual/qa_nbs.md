@@ -1,13 +1,13 @@
-# QA Script: /epistemic Command
+# QA Script: /nbs Command
 
 ## Purpose
 
-Manual quality assurance procedure for the `/epistemic` command. Follow these steps to evaluate whether the command produces useful, honest output.
+Manual quality assurance procedure for the `/nbs` command. Follow these steps to evaluate whether the command produces useful, honest output.
 
 ## Prerequisites
 
 - Claude Code installed and working
-- `/epistemic` command available (run `bin/install.sh` if not)
+- `/nbs` command available (run `bin/install.sh` if not)
 - A project with some history to review (not a blank slate)
 
 ## Procedure
@@ -17,7 +17,7 @@ Manual quality assurance procedure for the `/epistemic` command. Follow these st
 In a Claude Code session with an active project:
 
 ```
-/epistemic
+/nbs
 ```
 
 ### 2. Check: Foundation Awareness

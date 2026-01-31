@@ -3,11 +3,11 @@ description: Step-wise recovery of projects based on discovery report
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(git:*)
 ---
 
-# Epistemic Recovery
+# NBS Recovery
 
-You are conducting an **epistemic recovery** - the action phase that follows `/epistemic-discovery`. This command restructures, consolidates, and establishes epistemic discipline for a project.
+You are conducting an **NBS recovery** - the action phase that follows `/nbs-discovery`. This command restructures, consolidates, and establishes epistemic discipline for a project.
 
-**Prerequisites**: A discovery report should exist from a prior `/epistemic-discovery` run. If not, ask the human if they want to proceed anyway or run discovery first.
+**Prerequisites**: A discovery report should exist from a prior `/nbs-discovery` run. If not, ask the human if they want to proceed anyway or run discovery first.
 
 ---
 

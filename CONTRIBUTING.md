@@ -1,6 +1,6 @@
-# Contributing to Epistemic Framework
+# Contributing to NBS Framework
 
-Thank you for your interest in the Epistemic Framework!
+Thank you for your interest in the NBS Framework!
 
 ## Project Status
 
@@ -44,22 +44,22 @@ Before submitting a large PR, open an issue first to discuss the approach.
 
 ```bash
 # Clone the repository
-git clone https://github.com/SonicField/epistemic-framework.git
-cd epistemic-framework
+git clone https://github.com/SonicField/nbs-framework.git
+cd nbs-framework
 
 # Install commands
 ./bin/install.sh
 
 # Run tests
 ./tests/automated/test_install.sh
-./tests/automated/test_epistemic_command.sh
-./tests/automated/test_epistemic_discovery.sh
-./tests/automated/test_epistemic_recovery.sh
+./tests/automated/test_nbs_command.sh
+./tests/automated/test_nbs_discovery.sh
+./tests/automated/test_nbs_recovery.sh
 ```
 
 ## Testing Philosophy
 
-Tests evaluate AI output using a second AI instance. The verdict file is the deterministic state of truth. See `tests/automated/test_epistemic_command.sh` for the pattern.
+Tests evaluate AI output using a second AI instance. The verdict file is the deterministic state of truth. See `tests/automated/test_nbs_command.sh` for the pattern.
 
 ## Questions?
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test: /epistemic correctly dispatches to investigation review when markers present
+# Test: /nbs correctly dispatches to investigation review when markers present
 #
 # This test simulates an investigation context by:
 # 1. Placing INVESTIGATION-STATUS.md at the repo root
@@ -17,19 +17,19 @@ STATUS_FILE="$PROJECT_ROOT/INVESTIGATION-STATUS.md"
 CONTEXT_FILE=$(mktemp)
 
 # Output files
-EPISTEMIC_OUTPUT=$(mktemp)
+NBS_OUTPUT=$(mktemp)
 EVAL_TEMP=$(mktemp)
 VERDICT_FILE="$SCRIPT_DIR/verdicts/investigation_dispatch_verdict.json"
 
 # shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {
-    rm -f "$EPISTEMIC_OUTPUT" "$EVAL_TEMP" "$CONTEXT_FILE"
+    rm -f "$NBS_OUTPUT" "$EVAL_TEMP" "$CONTEXT_FILE"
     # Remove investigation status file from repo root
     rm -f "$STATUS_FILE"
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic Dispatch to Investigation Review ==="
+echo "=== Testing /nbs Dispatch to Investigation Review ==="
 echo "Scenario: investigation (INVESTIGATION-STATUS.md at repo root with context)"
 echo ""
 
@@ -44,10 +44,10 @@ cat > "$CONTEXT_FILE" << 'CONTEXT_EOF'
 
 We are currently running an investigation. Earlier in this session:
 
-1. User ran `/epistemic-investigation` to test a hypothesis about cache invalidation
+1. User ran `/nbs-investigation` to test a hypothesis about cache invalidation
 2. Created investigation branch and INVESTIGATION-STATUS.md
 3. Designed experiment but haven't run it yet
-4. Now running `/epistemic` to review investigation progress
+4. Now running `/nbs` to review investigation progress
 
 The INVESTIGATION-STATUS.md at the repo root is the active investigation, not a test fixture.
 CONTEXT_EOF
@@ -55,30 +55,30 @@ CONTEXT_EOF
 echo "Created context file with investigation history"
 echo ""
 
-# Step 1: Run /epistemic with context
-echo "Step 1: Running /epistemic with investigation context..."
+# Step 1: Run /nbs with context
+echo "Step 1: Running /nbs with investigation context..."
 
 cd "$PROJECT_ROOT" || exit 1
 
-# Provide context before running epistemic
+# Provide context before running nbs
 PROMPT="Please read this context first: $CONTEXT_FILE
 
-Now run /epistemic"
+Now run /nbs"
 
-EPISTEMIC_RESULT=$(echo "$PROMPT" | claude -p - --output-format text 2>&1) || true
-echo "$EPISTEMIC_RESULT" > "$EPISTEMIC_OUTPUT"
+NBS_RESULT=$(echo "$PROMPT" | claude -p - --output-format text 2>&1) || true
+echo "$NBS_RESULT" > "$NBS_OUTPUT"
 
-echo "Epistemic command complete. Output saved."
+echo "NBS command complete. Output saved."
 echo ""
 
 # Step 2: Evaluate for investigation review markers
 echo "Step 2: Evaluating for investigation dispatch behaviour..."
 
-EVAL_PROMPT="You are a test evaluator. Determine whether /epistemic correctly detected investigation context and produced an investigation review.
+EVAL_PROMPT="You are a test evaluator. Determine whether /nbs correctly detected investigation context and produced an investigation review.
 
 ## Expected Behaviour
 
-When /epistemic detects an investigation context (INVESTIGATION-STATUS.md exists and context indicates active investigation), it should:
+When /nbs detects an investigation context (INVESTIGATION-STATUS.md exists and context indicates active investigation), it should:
 1. Recognise investigation context
 2. Review the investigation work, NOT the main project
 3. Check: Is hypothesis falsifiable? Are experiments designed well? Are observations recorded?
@@ -94,7 +94,7 @@ When /epistemic detects an investigation context (INVESTIGATION-STATUS.md exists
 - Asking the user to confirm investigation context (shows appropriate uncertainty)
 
 ## Actual Output
-$EPISTEMIC_RESULT
+$NBS_RESULT
 
 ## Evaluation Criteria
 
@@ -147,14 +147,14 @@ echo "Details: $VERDICT_FILE"
 echo ""
 
 if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED: /epistemic correctly dispatched to investigation review"
+    echo "TEST PASSED: /nbs correctly dispatched to investigation review"
     exit 0
 else
-    echo "TEST FAILED: /epistemic did not dispatch to investigation review"
+    echo "TEST FAILED: /nbs did not dispatch to investigation review"
     echo ""
     echo "Expected: Investigation review (hypothesis, experiments)"
     echo "Got: See output below"
     echo ""
-    head -50 "$EPISTEMIC_OUTPUT"
+    head -50 "$NBS_OUTPUT"
     exit 1
 fi

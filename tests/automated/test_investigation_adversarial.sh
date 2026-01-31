@@ -1,11 +1,11 @@
 #!/bin/bash
-# Test: /epistemic does NOT dispatch to investigation review without markers
+# Test: /nbs does NOT dispatch to investigation review without markers
 #
 # This is an ADVERSARIAL test - verifies the dispatch system does NOT
 # incorrectly trigger investigation mode in normal contexts.
 #
 # Falsification: Test fails if output looks like investigation review
-# instead of normal epistemic review
+# instead of normal nbs review
 
 set -euo pipefail
 
@@ -15,40 +15,40 @@ SCENARIO_DIR="$SCRIPT_DIR/scenarios/no_plan_project"
 EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Output files
-EPISTEMIC_OUTPUT=$(mktemp)
+NBS_OUTPUT=$(mktemp)
 EVAL_TEMP=$(mktemp)
 VERDICT_FILE="$SCRIPT_DIR/verdicts/investigation_adversarial_verdict.json"
 
 # shellcheck disable=SC2317  # cleanup is called by trap
 cleanup() {
-    rm -f "$EPISTEMIC_OUTPUT" "$EVAL_TEMP"
+    rm -f "$NBS_OUTPUT" "$EVAL_TEMP"
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic Does NOT Dispatch to Investigation Mode ==="
+echo "=== Testing /nbs Does NOT Dispatch to Investigation Mode ==="
 echo "Scenario: no_plan_project (no investigation markers)"
 echo ""
 
-# Step 1: Run /epistemic in a normal context (no investigation markers)
-echo "Step 1: Running /epistemic in normal context..."
+# Step 1: Run /nbs in a normal context (no investigation markers)
+echo "Step 1: Running /nbs in normal context..."
 
 cd "$SCENARIO_DIR" || exit 1
 
-# Run epistemic - should produce normal review, NOT investigation review
-EPISTEMIC_RESULT=$(claude -p "/epistemic" --output-format text 2>&1) || true
-echo "$EPISTEMIC_RESULT" > "$EPISTEMIC_OUTPUT"
+# Run nbs - should produce normal review, NOT investigation review
+NBS_RESULT=$(claude -p "/nbs" --output-format text 2>&1) || true
+echo "$NBS_RESULT" > "$NBS_OUTPUT"
 
-echo "Epistemic command complete. Output saved."
+echo "NBS command complete. Output saved."
 echo ""
 
 # Step 2: Evaluate - should be normal review, NOT investigation review
 echo "Step 2: Evaluating for correct non-dispatch..."
 
-EVAL_PROMPT="You are a test evaluator. Determine whether /epistemic correctly produced a NORMAL review (not investigation mode).
+EVAL_PROMPT="You are a test evaluator. Determine whether /nbs correctly produced a NORMAL review (not investigation mode).
 
 ## Expected Behaviour
 
-When /epistemic runs WITHOUT investigation markers (no investigation/* branch, no INVESTIGATION-STATUS.md), it should produce a NORMAL REVIEW:
+When /nbs runs WITHOUT investigation markers (no investigation/* branch, no INVESTIGATION-STATUS.md), it should produce a NORMAL REVIEW:
 - Status section with health assessment
 - Issues section with problems found
 - Recommendations section (Strategic/Tactical)
@@ -59,13 +59,13 @@ It should NOT produce investigation review output:
 - No mentions of 'investigation rigour'
 
 ## Actual Output
-$EPISTEMIC_RESULT
+$NBS_RESULT
 
 ## Evaluation Criteria
 
 PASS if the output:
-- Looks like a normal epistemic review (Status/Issues/Recommendations)
-- Assesses the project's epistemic health
+- Looks like a normal nbs review (Status/Issues/Recommendations)
+- Assesses the project's NBS health
 - Does NOT review hypothesis or experiments
 - Does NOT mention investigation context
 
@@ -114,14 +114,14 @@ echo "Details: $VERDICT_FILE"
 echo ""
 
 if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED: /epistemic correctly produced normal review (no false investigation dispatch)"
+    echo "TEST PASSED: /nbs correctly produced normal review (no false investigation dispatch)"
     exit 0
 else
-    echo "TEST FAILED: /epistemic incorrectly dispatched to investigation mode"
+    echo "TEST FAILED: /nbs incorrectly dispatched to investigation mode"
     echo ""
     echo "Expected: Normal review format"
     echo "Got: See output below"
     echo ""
-    head -50 "$EPISTEMIC_OUTPUT"
+    head -50 "$NBS_OUTPUT"
     exit 1
 fi

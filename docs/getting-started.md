@@ -3,8 +3,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/SonicField/epistemic-framework.git
-cd epistemic-framework
+git clone https://github.com/SonicField/nbs-framework.git
+cd nbs-framework
 ./bin/install.sh
 ```
 
@@ -12,41 +12,41 @@ This creates symlinks in `~/.claude/commands/` for all commands. Restart Claude 
 
 ## First Use
 
-### For AI teams (supervisor/worker patterns)
+### For NBS teams (supervisor/worker patterns)
 
-When you want to set up a project for AI teams:
+When you want to set up a project for NBS teams:
 
 ```
-/start-ai-teams
+/start-nbs-teams
 ```
 
 The command asks for your terminal goal and creates:
-- `.epistemic/supervisor.md` - Your state and learnings
-- `.epistemic/decisions.log` - Append-only decision record
-- `.epistemic/workers/` - Worker task files go here
+- `.nbs/supervisor.md` - Your state and learnings
+- `.nbs/decisions.log` - Append-only decision record
+- `.nbs/workers/` - Worker task files go here
 
 You become the supervisor. Decompose work into tasks. Spawn workers. Capture learnings.
 
 Need help?
 
 ```
-/ai-teams-help
+/nbs-teams-help
 ```
 
 Interactive guidance on spawning workers, writing tasks, task scope, monitoring.
 
 ```
-/epistemic-help
+/nbs-help
 ```
 
-Interactive guidance on the epistemic framework itself - goals, falsifiability, investigations.
+Interactive guidance on the NBS framework itself - goals, falsifiability, investigations.
 
 ### During a work session
 
 When you want a check on your current work:
 
 ```
-/epistemic
+/nbs
 ```
 
 The command reviews the conversation history and any project files, then produces a short report. Read it in under two minutes. Act on it or not.
@@ -58,7 +58,7 @@ When you have scattered artefacts, unclear goals, and no documentation:
 **Step 1: Discovery**
 
 ```
-/epistemic-discovery
+/nbs-discovery
 ```
 
 The AI asks you questions. Answer them. You know things the files cannot tell.
@@ -74,15 +74,15 @@ At the end, you get a discovery report.
 **Step 2: Verify**
 
 ```
-/epistemic
+/nbs
 ```
 
-After discovery, run `/epistemic`. It detects you just did discovery and automatically verifies the report is complete - all sections present, confirmed restatements captured in full, nothing lost from the conversation.
+After discovery, run `/nbs`. It detects you just did discovery and automatically verifies the report is complete - all sections present, confirmed restatements captured in full, nothing lost from the conversation.
 
 **Step 3: Recovery**
 
 ```
-/epistemic-recovery
+/nbs-recovery
 ```
 
 The AI creates a plan. Each step is described, justified, reversible. You confirm each step before it executes. Nothing changes without your approval.
@@ -90,10 +90,10 @@ The AI creates a plan. Each step is described, justified, reversible. You confir
 **Step 4: Review**
 
 ```
-/epistemic
+/nbs
 ```
 
-After recovery, run `/epistemic` again. It reviews the recovery work for drift, bullshit, and blind spots.
+After recovery, run `/nbs` again. It reviews the recovery work for drift, bullshit, and blind spots.
 
 ---
 
@@ -125,9 +125,9 @@ Verify the installation:
 Run all tests:
 
 ```bash
-./tests/automated/test_epistemic_command.sh
-./tests/automated/test_epistemic_discovery.sh
-./tests/automated/test_epistemic_recovery.sh
+./tests/automated/test_nbs_command.sh
+./tests/automated/test_nbs_discovery.sh
+./tests/automated/test_nbs_recovery.sh
 ```
 
 Tests use AI to evaluate AI. The verdict files contain deterministic pass/fail judgements.

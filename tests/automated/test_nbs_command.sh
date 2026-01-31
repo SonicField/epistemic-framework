@@ -1,7 +1,7 @@
 #!/bin/bash
-# Test: Verify /epistemic command via AI evaluation
+# Test: Verify /nbs command via AI evaluation
 #
-# 1. Runs /epistemic on test scenario
+# 1. Runs /nbs on test scenario
 # 2. Evaluator AI judges output against explicit criteria
 # 3. Produces deterministic verdict file (state of truth)
 # 4. Exit code based on verdict
@@ -14,8 +14,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 SCENARIO_DIR="$SCRIPT_DIR/scenarios/no_plan_project"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_FILE="$SCRIPT_DIR/verdicts/epistemic_output_$TIMESTAMP.txt"
-VERDICT_FILE="$SCRIPT_DIR/verdicts/epistemic_verdict_$TIMESTAMP.json"
+OUTPUT_FILE="$SCRIPT_DIR/verdicts/nbs_output_$TIMESTAMP.txt"
+VERDICT_FILE="$SCRIPT_DIR/verdicts/nbs_verdict_$TIMESTAMP.json"
 EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Colours
@@ -23,16 +23,16 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-echo "=== Epistemic Command Test ==="
+echo "=== NBS Command Test ==="
 echo "Scenario: no_plan_project"
 echo "Timestamp: $TIMESTAMP"
 echo ""
 
-# Step 1: Run /epistemic in scenario directory
-echo "Step 1: Running /epistemic command..."
+# Step 1: Run /nbs in scenario directory
+echo "Step 1: Running /nbs command..."
 cd "$SCENARIO_DIR" || exit 1
 
-claude -p "/epistemic" --output-format text > "$OUTPUT_FILE" 2>&1 || true
+claude -p "/nbs" --output-format text > "$OUTPUT_FILE" 2>&1 || true
 
 echo "Output captured: $OUTPUT_FILE ($(wc -l < "$OUTPUT_FILE") lines)"
 echo ""
@@ -43,7 +43,7 @@ echo "Step 2: Evaluating output against criteria..."
 CRITERIA=$(cat "$SCENARIO_DIR/TEST_CRITERIA.md")
 OUTPUT=$(cat "$OUTPUT_FILE")
 
-EVAL_PROMPT="You are a test evaluator. Your job is to determine whether an epistemic review tool produced correct output for a known test scenario.
+EVAL_PROMPT="You are a test evaluator. Your job is to determine whether an nbs review tool produced correct output for a known test scenario.
 
 ## Test Criteria
 $CRITERIA

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test: /epistemic asks user when INVESTIGATION-STATUS.md found in subdirectory only
+# Test: /nbs asks user when INVESTIGATION-STATUS.md found in subdirectory only
 #
 # Uses pty-session for proper interactive testing - can detect and respond to
 # AskUserQuestion prompts.
@@ -26,7 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic Asks When INVESTIGATION-STATUS.md in Subdirectory ==="
+echo "=== Testing /nbs Asks When INVESTIGATION-STATUS.md in Subdirectory ==="
 echo "Isolated test repo: $TEST_REPO"
 echo ""
 
@@ -102,9 +102,9 @@ sleep 2
 echo "Claude ready."
 echo ""
 
-# Step 2: Send /epistemic command
-echo "Step 2: Sending /epistemic command..."
-"$PTY_SESSION" send "$SESSION_NAME" '/epistemic'
+# Step 2: Send /nbs command
+echo "Step 2: Sending /nbs command..."
+"$PTY_SESSION" send "$SESSION_NAME" '/nbs'
 # Send extra Enter to ensure submission (some TUIs need this)
 sleep 1
 "$PTY_SESSION" send "$SESSION_NAME" ''
@@ -121,7 +121,7 @@ echo "Output captured. Analyzing..."
 echo ""
 
 # Step 4: Evaluate the output
-EPISTEMIC_OUTPUT=$(cat "$CAPTURE_FILE")
+NBS_OUTPUT=$(cat "$CAPTURE_FILE")
 
 # Check for indicators
 ASKED_USER=false
@@ -130,28 +130,28 @@ IS_INVESTIGATION_REVIEW=false
 FOUND_FILE=false
 
 # Check if it found the file
-if echo "$EPISTEMIC_OUTPUT" | grep -qi "INVESTIGATION-STATUS\|investigation.*subdirectory\|docs/investigations"; then
+if echo "$NBS_OUTPUT" | grep -qi "INVESTIGATION-STATUS\|investigation.*subdirectory\|docs/investigations"; then
     FOUND_FILE=true
 fi
 
 # Check if it asked the user about investigation context
 # AskUserQuestion appears as a selection UI with options
-if echo "$EPISTEMIC_OUTPUT" | grep -qi "are you.*investigation\|is this.*investigation\|investigation.*active\|confirm.*investigation\|currently.*investigation\|test fixture\|Active investigation\|old file"; then
+if echo "$NBS_OUTPUT" | grep -qi "are you.*investigation\|is this.*investigation\|investigation.*active\|confirm.*investigation\|currently.*investigation\|test fixture\|Active investigation\|old file"; then
     ASKED_USER=true
 fi
 
 # Also check for the selection UI pattern (☐ or numbered options)
-if echo "$EPISTEMIC_OUTPUT" | grep -q "☐\|❯ 1\.\|1\. Active"; then
+if echo "$NBS_OUTPUT" | grep -q "☐\|❯ 1\.\|1\. Active"; then
     ASKED_USER=true
 fi
 
 # Check if it produced normal review format
-if echo "$EPISTEMIC_OUTPUT" | grep -q "## Status" && echo "$EPISTEMIC_OUTPUT" | grep -q "## Recommendations"; then
+if echo "$NBS_OUTPUT" | grep -q "## Status" && echo "$NBS_OUTPUT" | grep -q "## Recommendations"; then
     IS_NORMAL_REVIEW=true
 fi
 
 # Check if it produced investigation review format
-if echo "$EPISTEMIC_OUTPUT" | grep -qi "hypothesis.*falsif\|experiment.*design\|investigation review"; then
+if echo "$NBS_OUTPUT" | grep -qi "hypothesis.*falsif\|experiment.*design\|investigation review"; then
     IS_INVESTIGATION_REVIEW=true
 fi
 
@@ -174,7 +174,7 @@ elif [[ "$IS_NORMAL_REVIEW" == true ]] || [[ "$IS_INVESTIGATION_REVIEW" == true 
     REASONING="AI proceeded with complete review without asking about subdirectory investigation file"
 else
     # Neither asked nor produced complete review - check if still processing
-    if echo "$EPISTEMIC_OUTPUT" | grep -q "●\|⠋\|⠙\|⠹"; then
+    if echo "$NBS_OUTPUT" | grep -q "●\|⠋\|⠙\|⠹"; then
         VERDICT="INCONCLUSIVE"
         REASONING="AI appears to still be processing - may need more time"
     else
@@ -203,7 +203,7 @@ echo "Details: $VERDICT_FILE"
 echo ""
 
 if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED: /epistemic correctly asked user about ambiguous context"
+    echo "TEST PASSED: /nbs correctly asked user about ambiguous context"
     exit 0
 elif [[ "$VERDICT" == "INCONCLUSIVE" ]]; then
     echo "TEST INCONCLUSIVE: Need more time or manual inspection"
@@ -212,7 +212,7 @@ elif [[ "$VERDICT" == "INCONCLUSIVE" ]]; then
     cat "$CAPTURE_FILE"
     exit 1
 else
-    echo "TEST FAILED: /epistemic did not ask user when it should have"
+    echo "TEST FAILED: /nbs did not ask user when it should have"
     echo ""
     echo "Captured output:"
     cat "$CAPTURE_FILE"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test: /epistemic does NOT silently proceed when INVESTIGATION-STATUS.md in subdirectory
+# Test: /nbs does NOT silently proceed when INVESTIGATION-STATUS.md in subdirectory
 #
 # ADVERSARIAL TEST - verifies wrong behaviour does NOT occur
 # When file is in subdirectory (ambiguous), AI should ask user,
@@ -26,7 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "=== ADVERSARIAL: /epistemic Should NOT Silently Proceed When File in Subdirectory ==="
+echo "=== ADVERSARIAL: /nbs Should NOT Silently Proceed When File in Subdirectory ==="
 echo "Isolated test repo: $TEST_REPO"
 echo ""
 
@@ -94,9 +94,9 @@ sleep 2
 echo "Claude ready."
 echo ""
 
-# Send /epistemic
-echo "Sending /epistemic command..."
-"$PTY_SESSION" send "$SESSION_NAME" '/epistemic'
+# Send /nbs
+echo "Sending /nbs command..."
+"$PTY_SESSION" send "$SESSION_NAME" '/nbs'
 sleep 1
 "$PTY_SESSION" send "$SESSION_NAME" ''
 
@@ -108,22 +108,22 @@ sleep 60
 echo "Capturing output..."
 "$PTY_SESSION" read "$SESSION_NAME" > "$CAPTURE_FILE"
 
-EPISTEMIC_OUTPUT=$(cat "$CAPTURE_FILE")
+NBS_OUTPUT=$(cat "$CAPTURE_FILE")
 
 # Check for indicators
 ASKED_USER=false
 PRODUCED_COMPLETE_REVIEW=false
 
 # Check if it asked user
-if echo "$EPISTEMIC_OUTPUT" | grep -qi "are you.*investigation\|is this.*investigation\|test fixture\|Active investigation\|old file\|☐\|❯ 1\."; then
+if echo "$NBS_OUTPUT" | grep -qi "are you.*investigation\|is this.*investigation\|test fixture\|Active investigation\|old file\|☐\|❯ 1\."; then
     ASKED_USER=true
 fi
 
 # Check if it produced a complete review (either type) without asking
-if echo "$EPISTEMIC_OUTPUT" | grep -q "## Status" && echo "$EPISTEMIC_OUTPUT" | grep -q "## Recommendations"; then
+if echo "$NBS_OUTPUT" | grep -q "## Status" && echo "$NBS_OUTPUT" | grep -q "## Recommendations"; then
     PRODUCED_COMPLETE_REVIEW=true
 fi
-if echo "$EPISTEMIC_OUTPUT" | grep -qi "## Verdict\|investigation review\|hypothesis.*falsif"; then
+if echo "$NBS_OUTPUT" | grep -qi "## Verdict\|investigation review\|hypothesis.*falsif"; then
     PRODUCED_COMPLETE_REVIEW=true
 fi
 
@@ -164,10 +164,10 @@ echo "Details: $VERDICT_FILE"
 echo ""
 
 if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED: /epistemic correctly avoided silent proceed"
+    echo "TEST PASSED: /nbs correctly avoided silent proceed"
     exit 0
 else
-    echo "TEST FAILED: /epistemic silently proceeded without asking"
+    echo "TEST FAILED: /nbs silently proceeded without asking"
     echo ""
     echo "Captured output:"
     cat "$CAPTURE_FILE"

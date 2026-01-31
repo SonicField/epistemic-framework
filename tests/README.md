@@ -1,6 +1,6 @@
-# Testing the Epistemic Framework
+# Testing the NBS Framework
 
-This directory contains tests for the epistemic framework commands.
+This directory contains tests for the NBS framework commands.
 
 ## Testing Philosophy
 
@@ -30,8 +30,8 @@ tests/
 │   ├── verdicts/        # Generated test outputs (git-ignored)
 │   └── test_*.sh        # Test scripts
 └── manual/              # Human-executed QA procedures
-    ├── qa_epistemic.md  # QA script for /epistemic command
-    └── qa_discovery.md  # QA script for /epistemic-discovery
+    ├── qa_nbs.md        # QA script for /nbs command
+    └── qa_discovery.md  # QA script for /nbs-discovery
 ```
 
 ---
@@ -45,10 +45,10 @@ cd tests/automated
 
 # Run individually
 ./test_install.sh
-./test_epistemic_command.sh
-./test_epistemic_discovery.sh
-./test_epistemic_recovery.sh
-./test_epistemic_dispatch.sh
+./test_nbs_command.sh
+./test_nbs_discovery.sh
+./test_nbs_recovery.sh
+./test_nbs_dispatch.sh
 ./test_dispatch_adversarial.sh
 ./test_investigation_branch.sh
 ./test_investigation_file.sh
@@ -69,10 +69,10 @@ cd tests/automated
 | Test | Purpose | Falsification |
 |------|---------|---------------|
 | `test_install.sh` | Verifies symlinks created correctly | Fails if any command symlink missing or incorrect |
-| `test_epistemic_command.sh` | Tests `/epistemic` on project missing plan | Fails if known issues not identified |
-| `test_epistemic_discovery.sh` | Tests `/epistemic-discovery` on messy scenario | Fails if artefacts not found or incorrectly triaged |
-| `test_epistemic_recovery.sh` | Tests `/epistemic-recovery` plan generation | Fails if plan missing required properties |
-| `test_epistemic_dispatch.sh` | Tests dispatch to verification after discovery | Fails if normal review produced instead of verification |
+| `test_nbs_command.sh` | Tests `/nbs` on project missing plan | Fails if known issues not identified |
+| `test_nbs_discovery.sh` | Tests `/nbs-discovery` on messy scenario | Fails if artefacts not found or incorrectly triaged |
+| `test_nbs_recovery.sh` | Tests `/nbs-recovery` plan generation | Fails if plan missing required properties |
+| `test_nbs_dispatch.sh` | Tests dispatch to verification after discovery | Fails if normal review produced instead of verification |
 | `test_dispatch_adversarial.sh` | Tests NO dispatch without discovery context | Fails if verification mode incorrectly triggered |
 | `test_investigation_branch.sh` | Tests dispatch via investigation/* branch (P0) | Fails if branch not detected or normal review produced |
 | `test_investigation_file.sh` | Tests dispatch via INVESTIGATION-STATUS.md at root (P1) | Fails if file not detected or normal review produced |
@@ -89,16 +89,16 @@ cd tests/automated
 
 ### Scenarios
 
-**no_plan_project/**: A project with code but no plan or progress files. Used to test `/epistemic` detection of missing documentation.
+**no_plan_project/**: A project with code but no plan or progress files. Used to test `/nbs` detection of missing documentation.
 
 **messy_project/**: Scattered artefacts with known ground truth. Contains:
 - `GROUND_TRUTH.md` - What the test knows (hidden from discovery)
 - Multiple loader versions (v1 broken, v2 working, v3 incomplete)
-- Used to test `/epistemic-discovery` artefact detection
+- Used to test `/nbs-discovery` artefact detection
 
 **post_discovery/**: A valid discovery report for testing dispatch behaviour.
 - `discovery_report.md` - Complete report with all required sections
-- Used to test `/epistemic` dispatch to verification mode
+- Used to test `/nbs` dispatch to verification mode
 
 **bad_discovery/**: Deliberately incomplete discovery report.
 - Missing sections, wrong verdicts
@@ -106,7 +106,7 @@ cd tests/automated
 
 **investigation/**: Investigation context with status file.
 - `INVESTIGATION-STATUS.md` - Mock investigation in progress
-- Used to test `/epistemic` dispatch to investigation review mode
+- Used to test `/nbs` dispatch to investigation review mode
 
 ### Verdict Files
 
@@ -139,9 +139,9 @@ The exit code is derived from the verdict. These files persist for debugging fai
 
 Manual QA procedures for human evaluation. Use these on real projects.
 
-### qa_epistemic.md
+### qa_nbs.md
 
-QA script for the `/epistemic` command. Checks:
+QA script for the `/nbs` command. Checks:
 - Foundation awareness (goals.md read or understood)
 - Output structure (Status, Issues, Recommendations)
 - Honest assessment (real issues, not invented or omitted)
@@ -150,7 +150,7 @@ QA script for the `/epistemic` command. Checks:
 
 ### qa_discovery.md
 
-QA script for `/epistemic-discovery`. Run on a real project with the project owner. Produces:
+QA script for `/nbs-discovery`. Run on a real project with the project owner. Produces:
 - Discovery report (artefacts, triage, gap analysis)
 - Process log (what worked, what didn't)
 

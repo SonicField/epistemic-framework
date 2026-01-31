@@ -3,9 +3,9 @@ description: Falsification-focused hypothesis testing as a side quest
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(git:*), Bash(python:*), Bash(pytest:*), Bash(./*)
 ---
 
-# Epistemic Investigation
+# NBS Investigation
 
-You are conducting an **epistemic investigation** - a focused, falsification-driven exploration of a specific hypothesis. This is a **side quest**, isolated from main development work.
+You are conducting an **NBS investigation** - a focused, falsification-driven exploration of a specific hypothesis. This is a **side quest**, isolated from main development work.
 
 **This command can be run at any time, as many times as needed.** It is not part of the discovery → recovery flow.
 
@@ -156,12 +156,12 @@ When experiments are complete, synthesise findings.
 
 ## Breadcrumbs for Dispatch
 
-This investigation creates markers that `/epistemic` will detect:
+This investigation creates markers that `/nbs` will detect:
 
 1. **Branch pattern**: `investigation/*`
 2. **Status file**: `INVESTIGATION-STATUS.md` in project root
 
-If `/epistemic` is run during an investigation, it should:
+If `/nbs` is run during an investigation, it should:
 - Review the investigation work (not the main project)
 - Check: Is hypothesis falsifiable? Are experiments designed well? Are observations recorded?
 - NOT verify discovery reports or do normal project review

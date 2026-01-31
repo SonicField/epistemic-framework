@@ -2,7 +2,7 @@
 
 ## Scope
 
-The Epistemic Framework consists of documentation and Claude Code command scripts. It does not process untrusted input or handle sensitive data. Security considerations are minimal.
+The NBS Framework consists of documentation and Claude Code command scripts. It does not process untrusted input or handle sensitive data. Security considerations are minimal.
 
 ## Supported Versions
 
@@ -30,6 +30,6 @@ As this is a research project maintained by one person:
 
 ## Security Considerations
 
-The Claude Code commands (`/epistemic`, `/epistemic-discovery`, `/epistemic-recovery`) have limited tool access as defined in their YAML frontmatter. Review the `allowed-tools` field in each command file to understand capabilities.
+The Claude Code commands (`/nbs`, `/nbs-discovery`, `/nbs-recovery`) have limited tool access as defined in their YAML frontmatter. Review the `allowed-tools` field in each command file to understand capabilities.
 
 The framework is designed for collaborative human-AI work, not for autonomous operation or handling untrusted projects.

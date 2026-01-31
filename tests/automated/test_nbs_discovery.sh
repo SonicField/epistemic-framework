@@ -1,7 +1,7 @@
 #!/bin/bash
-# Test: /epistemic-discovery produces a valid discovery report
+# Test: /nbs-discovery produces a valid discovery report
 #
-# This test runs /epistemic-discovery on a prepared messy scenario,
+# This test runs /nbs-discovery on a prepared messy scenario,
 # then uses an AI evaluator to verify the report captures known artefacts.
 #
 # The scenario has a GROUND_TRUTH.md file that the test reads but the
@@ -26,7 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "=== Testing /epistemic-discovery ==="
+echo "=== Testing /nbs-discovery ==="
 echo "Scenario: $SCENARIO_DIR"
 echo ""
 
@@ -34,7 +34,7 @@ echo ""
 # We simulate human responses by providing them upfront
 echo "Step 1: Running discovery command..."
 
-DISCOVERY_PROMPT="Run /epistemic-discovery on this project: $SCENARIO_DIR
+DISCOVERY_PROMPT="Run /nbs-discovery on this project: $SCENARIO_DIR
 
 When asked about context, respond:
 - Terminal goal: Parallelise data loading for a machine learning pipeline

@@ -1,4 +1,4 @@
-# Epistemic Framework
+# NBS Framework
 
 A framework for honest collaboration between humans and AI systems.
 
@@ -13,7 +13,7 @@ A framework for honest collaboration between humans and AI systems.
 
 ## Examples
 
-- [CLAUDE.md](examples/CLAUDE.md) - Example project configuration for epistemic programming
+- [CLAUDE.md](examples/CLAUDE.md) - Example project configuration for NBS programming
 
 ## Foundation
 
@@ -33,40 +33,40 @@ Built on the foundation:
 
 ### Core Command
 
-- [/epistemic](claude_tools/epistemic.md) - Review and dispatch
+- [/nbs](claude_tools/nbs.md) - Review and dispatch
 
 Run this after any session. It detects context and dispatches:
 - In `investigation/*` branch → reviews investigation rigour
-- After `/epistemic-discovery` → verifies the discovery report is complete
-- After `/epistemic-recovery` → reviews the recovery work
-- Otherwise → general epistemic review
+- After `/nbs-discovery` → verifies the discovery report is complete
+- After `/nbs-recovery` → reviews the recovery work
+- Otherwise → general NBS review
 
-### AI Teams Tools
+### NBS Teams Tools
 
-Commands for setting up and using AI teams (supervisor/worker patterns):
+Commands for setting up and using NBS teams (supervisor/worker patterns):
 
-- [/start-ai-teams](claude_tools/start-ai-teams.md) - Bootstrap project with `.epistemic/` structure (one command setup)
-- [/ai-teams-help](claude_tools/ai-teams-help.md) - Interactive guidance for AI teams usage
-- [/epistemic-help](claude_tools/epistemic-help.md) - Interactive guidance for the epistemic framework
+- [/start-nbs-teams](claude_tools/start-nbs-teams.md) - Bootstrap project with `.nbs/` structure (one command setup)
+- [/nbs-teams-help](claude_tools/nbs-teams-help.md) - Interactive guidance for NBS teams usage
+- [/nbs-help](claude_tools/nbs-help.md) - Interactive guidance for the NBS framework
 
 For AI-as-supervisor or AI-as-worker roles:
-- [AI Teams Supervisor](claude_tools/ai-teams-supervisor.md) - Role and responsibilities for supervisor
-- [AI Teams Worker](claude_tools/ai-teams-worker.md) - Role and responsibilities for worker
+- [NBS Teams Supervisor](claude_tools/nbs-teams-supervisor.md) - Role and responsibilities for supervisor
+- [NBS Teams Worker](claude_tools/nbs-teams-worker.md) - Role and responsibilities for worker
 
 ### Workflow Commands
 
-- [/epistemic-discovery](claude_tools/epistemic-discovery.md) - Read-only archaeology for messy projects
-- [/epistemic-recovery](claude_tools/epistemic-recovery.md) - Step-wise restructuring with confirmation
+- [/nbs-discovery](claude_tools/nbs-discovery.md) - Read-only archaeology for messy projects
+- [/nbs-recovery](claude_tools/nbs-recovery.md) - Step-wise restructuring with confirmation
 
 ### Side Quest Commands
 
-- [/epistemic-investigation](claude_tools/epistemic-investigation.md) - Hypothesis testing through experiment (isolated side branch)
+- [/nbs-investigation](claude_tools/nbs-investigation.md) - Hypothesis testing through experiment (isolated side branch)
 
 Run this when you want to test a hypothesis before committing to a direction. Creates an isolated investigation branch, designs falsifiable experiments, and produces a verdict (falsified / failed to falsify / inconclusive).
 
 ### Verification Commands
 
-- [/epistemic-discovery-verify](claude_tools/epistemic-discovery-verify.md) - Verify discovery report completeness (auto-dispatched by /epistemic)
+- [/nbs-discovery-verify](claude_tools/nbs-discovery-verify.md) - Verify discovery report completeness (auto-dispatched by /nbs)
 
 ## Testing
 

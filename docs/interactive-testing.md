@@ -45,7 +45,7 @@ fi
 "$PTY_SESSION" wait "$SESSION_NAME" 'Welcome' --timeout=30
 
 # Send command
-"$PTY_SESSION" send "$SESSION_NAME" '/epistemic'
+"$PTY_SESSION" send "$SESSION_NAME" '/nbs'
 sleep 1
 "$PTY_SESSION" send "$SESSION_NAME" ''  # Extra Enter for submission
 
@@ -98,7 +98,7 @@ Some prompts require:
 2. Another Enter to submit
 
 ```bash
-"$PTY_SESSION" send "$SESSION_NAME" '/epistemic'
+"$PTY_SESSION" send "$SESSION_NAME" '/nbs'
 sleep 1
 "$PTY_SESSION" send "$SESSION_NAME" ''  # Second Enter
 ```
@@ -110,7 +110,7 @@ Wait for prompts before sending commands. The process may not be ready immediate
 ```bash
 "$PTY_SESSION" create "$SESSION_NAME" "claude"
 "$PTY_SESSION" wait "$SESSION_NAME" 'Welcome' --timeout=30  # Wait first
-"$PTY_SESSION" send "$SESSION_NAME" '/epistemic'            # Then send
+"$PTY_SESSION" send "$SESSION_NAME" '/nbs'            # Then send
 ```
 
 ## Working Directory: Isolated Repositories

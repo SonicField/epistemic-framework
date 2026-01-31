@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test: /epistemic does NOT produce normal review when INVESTIGATION-STATUS.md at root
+# Test: /nbs does NOT produce normal review when INVESTIGATION-STATUS.md at root
 #
 # ADVERSARIAL TEST - verifies wrong behaviour does NOT occur
 # When file is at repo root, AI should dispatch to investigation review,
@@ -15,15 +15,15 @@ VERDICT_FILE="$SCRIPT_DIR/verdicts/investigation_adv_no_normal_verdict.json"
 
 # Create isolated test environment
 TEST_REPO=$(mktemp -d)
-EPISTEMIC_OUTPUT=$(mktemp)
+NBS_OUTPUT=$(mktemp)
 
 cleanup() {
-    rm -f "$EPISTEMIC_OUTPUT"
+    rm -f "$NBS_OUTPUT"
     rm -rf "$TEST_REPO"
 }
 trap cleanup EXIT
 
-echo "=== ADVERSARIAL: /epistemic Should NOT Produce Normal Review When File at Root ==="
+echo "=== ADVERSARIAL: /nbs Should NOT Produce Normal Review When File at Root ==="
 echo "Isolated test repo: $TEST_REPO"
 echo ""
 
@@ -65,11 +65,11 @@ git commit -q -m "Setup"
 echo "Created repo with INVESTIGATION-STATUS.md at root"
 echo ""
 
-# Run /epistemic
-echo "Running /epistemic..."
+# Run /nbs
+echo "Running /nbs..."
 cd "$TEST_REPO"
-EPISTEMIC_RESULT=$(claude -p "/epistemic" --output-format text 2>&1) || true
-echo "$EPISTEMIC_RESULT" > "$EPISTEMIC_OUTPUT"
+NBS_RESULT=$(claude -p "/nbs" --output-format text 2>&1) || true
+echo "$NBS_RESULT" > "$NBS_OUTPUT"
 echo "Complete."
 echo ""
 
@@ -81,20 +81,20 @@ IS_INVESTIGATION_REVIEW=false
 MENTIONS_INVESTIGATION=false
 
 # Check for normal review format (adversarial condition - should NOT have this)
-if echo "$EPISTEMIC_RESULT" | grep -q "## Status" && echo "$EPISTEMIC_RESULT" | grep -q "## Recommendations"; then
+if echo "$NBS_RESULT" | grep -q "## Status" && echo "$NBS_RESULT" | grep -q "## Recommendations"; then
     # Check if it's the normal "Status/Issues/Recommendations" format
-    if echo "$EPISTEMIC_RESULT" | grep -q "## Issues\|### Strategic\|### Tactical"; then
+    if echo "$NBS_RESULT" | grep -q "## Issues\|### Strategic\|### Tactical"; then
         IS_NORMAL_REVIEW=true
     fi
 fi
 
 # Check for investigation review markers
-if echo "$EPISTEMIC_RESULT" | grep -qi "hypothesis.*falsif\|experiment\|investigation review\|performance regression"; then
+if echo "$NBS_RESULT" | grep -qi "hypothesis.*falsif\|experiment\|investigation review\|performance regression"; then
     IS_INVESTIGATION_REVIEW=true
 fi
 
 # Check if it mentions the investigation at all
-if echo "$EPISTEMIC_RESULT" | grep -qi "performance regression\|INVESTIGATION-STATUS\|profiling"; then
+if echo "$NBS_RESULT" | grep -qi "performance regression\|INVESTIGATION-STATUS\|profiling"; then
     MENTIONS_INVESTIGATION=true
 fi
 
@@ -140,11 +140,11 @@ echo "Details: $VERDICT_FILE"
 echo ""
 
 if [[ "$VERDICT" == "PASS" ]]; then
-    echo "TEST PASSED: /epistemic correctly avoided normal review when file at root"
+    echo "TEST PASSED: /nbs correctly avoided normal review when file at root"
     exit 0
 else
-    echo "TEST FAILED: /epistemic incorrectly produced normal review"
+    echo "TEST FAILED: /nbs incorrectly produced normal review"
     echo ""
-    head -60 "$EPISTEMIC_OUTPUT"
+    head -60 "$NBS_OUTPUT"
     exit 1
 fi

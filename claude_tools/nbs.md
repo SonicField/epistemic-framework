@@ -3,7 +3,7 @@ description: Systematic audit of reasoning quality, goal alignment, and falsific
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git log:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git rev-parse:*)
 ---
 
-# Epistemic Review
+# NBS Review
 
 **MANDATORY FIRST ACTION - DO NOT SKIP**
 
@@ -25,7 +25,7 @@ Dispatch based on results:
 
 ---
 
-You are conducting an **epistemic review** - a systematic audit of reasoning quality, goal alignment, and falsification discipline for the current project or coding session.
+You are conducting an **NBS review** - a systematic audit of reasoning quality, goal alignment, and falsification discipline for the current project or coding session.
 
 You have access to the full conversation history. Use it.
 
@@ -58,21 +58,21 @@ Same as above - produce investigation review.
 Ask the user:
 > "I found an INVESTIGATION-STATUS.md file at [path]. Are you currently in an investigation, or is this a test fixture / old file?"
 
-### If you executed `/epistemic-discovery` this session
+### If you executed `/nbs-discovery` this session
 
 Evidence: You performed Phases 1-4 (Establish Context, Archaeology, Triage, Gap Analysis) and produced a discovery report.
 
-→ **Dispatch**: Read `~/.claude/commands/epistemic-discovery-verify.md` and apply it instead of continuing here. That command verifies discovery report completeness before recovery.
+→ **Dispatch**: Read `~/.claude/commands/nbs-discovery-verify.md` and apply it instead of continuing here. That command verifies discovery report completeness before recovery.
 
-### If you executed `/epistemic-recovery` this session
+### If you executed `/nbs-recovery` this session
 
 Evidence: You read a discovery report and created or executed a recovery plan.
 
-→ **Continue below**: Apply normal epistemic review to the recovery work. (Future: may dispatch to recovery-specific verification)
+→ **Continue below**: Apply normal NBS review to the recovery work. (Future: may dispatch to recovery-specific verification)
 
 ### If none of the above
 
-→ **Continue below**: Apply normal epistemic review.
+→ **Continue below**: Apply normal NBS review.
 
 ---
 
@@ -137,7 +137,7 @@ Before anything else, ask yourself: **Have I read `concepts/goals.md` in this se
 - If **yes** (you have clear memory of its contents): proceed to Step 2.
 - If **no** or **unsure**: read `concepts/goals.md` now. Goals are the foundation - everything else exists in service of them.
 
-The framework lives at: `~/claude_docs/epistemic-framework/` (or locate via the symlink at `~/.claude/commands/epistemic.md`).
+The framework lives at: `~/claude_docs/nbs-framework/` (or locate via the symlink at `~/.claude/commands/nbs.md`).
 
 ### Step 2: Initial Review
 
@@ -182,7 +182,7 @@ Recommendations with falsification criteria. Concise. Readable in under 2 minute
 Your final output must be concise. Use this structure:
 
 ```markdown
-# Epistemic Review
+# NBS Review
 
 ## Status
 [2-4 bullets max - overall health assessment]

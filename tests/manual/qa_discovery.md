@@ -1,10 +1,10 @@
 # Manual Discovery Test Template
 
-**Purpose**: Run `/epistemic-discovery` on a real project while recording the process for framework evaluation.
+**Purpose**: Run `/nbs-discovery` on a real project while recording the process for framework evaluation.
 
 ## Prerequisites
 
-- A project that was developed without epistemic discipline, or has drifted into disorder
+- A project that was developed without NBS discipline, or has drifted into disorder
 - The project owner available to answer questions
 - Time for a thorough discovery session (typically 30-60 minutes)
 
@@ -14,7 +14,7 @@ You have two parallel tasks:
 
 ### Task 1: Run Discovery
 
-Execute `/epistemic-discovery` on the target project.
+Execute `/nbs-discovery` on the target project.
 
 Locations to investigate:
 - Primary work directory: [ASK PROJECT OWNER]
@@ -60,7 +60,7 @@ Format the process log as:
 Write both outputs to files:
 
 1. **Discovery Report**: `<date>-<project>-discovery-report.md`
-   - Follow the format defined in `/epistemic-discovery` command
+   - Follow the format defined in `/nbs-discovery` command
    - Must include: Terminal Goal, Artefacts Found, Triage Summary, Gap Analysis, Valuable Outcomes, Open Questions, Recommended Next Steps
 
 2. **Process Log**: `<date>-<project>-process-log.md`
