@@ -19,13 +19,12 @@ Active pty-session sessions:
 ```
 Active pty-session sessions:
   worker-lexer    running
-  git-push        exited (0)
+  git-push        killed
 ```
 
 **Implementation:**
 - Running sessions: query `tmux list-sessions`
-- Exited sessions: check cache directory for saved state
-- Exit code: stored in cache file metadata
+- Killed sessions: check cache directory for saved state
 
 **Files changed:**
 - `bin/pty-session`: `cmd_list()` function
@@ -54,15 +53,14 @@ Active pty-session sessions:
 
 **Implementation:**
 - Create `~/.pty-session/cache/` directory
-- When session created, install tmux hook to capture on exit:
-  ```bash
-  tmux set-hook -t "$session" session-closed \
-    "run-shell 'pty-session _capture-exit $name'"
-  ```
-- `_capture-exit` (internal command):
+- **REVISED APPROACH** (tmux hooks don't fire reliably):
+  - `kill` command captures pane content BEFORE killing session
+  - Stores to cache, then kills session
+  - No hooks needed - simpler and more reliable
+- Cache operations:
   - Capture pane to `~/.pty-session/cache/$name.output`
-  - Save exit status to `~/.pty-session/cache/$name.exitcode`
   - Save timestamp to `~/.pty-session/cache/$name.timestamp`
+  - Exit code not available (session killed explicitly, not exited naturally)
 - `read` checks:
   1. Session alive? Read from tmux
   2. Cache exists? Read cache, delete cache files
@@ -70,10 +68,9 @@ Active pty-session sessions:
 
 **Files changed:**
 - `bin/pty-session`:
-  - `cmd_create()` - install exit hook
+  - `cmd_kill()` - capture to cache before killing
   - `cmd_read()` - check cache if session not found
   - `cmd_list()` - include cached sessions
-  - Add `_capture-exit` internal command
   - Add cache cleanup on successful read
 
 **Cache structure:**
@@ -81,8 +78,7 @@ Active pty-session sessions:
 ~/.pty-session/
   cache/
     worker-name.output     # Last screen content
-    worker-name.exitcode   # Exit status (0, 1, etc.)
-    worker-name.timestamp  # When session exited
+    worker-name.timestamp  # When session was killed
 ```
 
 ### 4. Documentation updates
@@ -149,11 +145,11 @@ tests/manual/qa_pty_session.md (update existing)
 
 ## Implementation Order
 
-1. Cache infrastructure (directory, `_capture-exit` command)
-2. Update `create` to install hooks
+1. Cache infrastructure (directory creation in `cmd_kill`)
+2. Update `kill` to capture before killing
 3. Update `read` to check cache
 4. Add `--wait` flag to `read`
-5. Update `list` to show status
+5. Update `list` to show killed sessions
 6. Documentation
 7. Tests (normal)
 8. Tests (adversarial)
@@ -171,7 +167,7 @@ tests/manual/qa_pty_session.md (update existing)
 ## Falsification Criteria
 
 **Feature 1 (status in list):**
-- Create session, kill it, run list → should show "exited (N)"
+- Create session, kill it, run list → should show "killed"
 - If it shows "running" or not listed, feature failed
 
 **Feature 2 (blocking read):**

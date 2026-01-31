@@ -11,14 +11,15 @@
 #   pty-session send <name> <text>        Send keystrokes (adds Enter by default)
 #   pty-session read <name>               Capture current screen content
 #   pty-session wait <name> <pattern>     Poll until pattern appears (default 60s)
-#   pty-session kill <name>               Terminate session
-#   pty-session list                      Show active pty-session sessions
+#   pty-session kill <name>               Terminate session (output cached)
+#   pty-session list                      Show active and killed pty-session sessions
 #   pty-session help                      Show this help
 #
 # Options:
 #   --no-enter     With 'send': don't append Enter after text
-#   --timeout=N    With 'wait': timeout in seconds (default 60)
+#   --timeout=N    With 'wait' or 'read --wait': timeout in seconds
 #   --scrollback=N With 'read': lines of scrollback to capture (default 100)
+#   --wait         With 'read': block until session exits, then read cache
 #
 # Examples:
 #   pty-session create myrepl 'python3'
@@ -37,6 +38,7 @@
 set -uo pipefail
 
 PREFIX="pty_"
+CACHE_DIR="${HOME}/.pty-session/cache"
 
 usage() {
     grep '^#' "$0" | grep -v '!/bin/bash' | cut -c3-
@@ -50,6 +52,44 @@ session_exists() {
     local name
     name=$(session_name "$1")
     tmux has-session -t "$name" 2>/dev/null
+}
+
+cache_exists() {
+    local name="$1"
+    [[ -f "${CACHE_DIR}/${name}.output" ]]
+}
+
+cache_session() {
+    local name="$1"
+    local session
+    session=$(session_name "$name")
+
+    # Create cache directory if it doesn't exist
+    mkdir -p "$CACHE_DIR" 2>/dev/null || return 1
+
+    # Capture pane content
+    tmux capture-pane -t "$session" -p -S -100 > "${CACHE_DIR}/${name}.output" 2>/dev/null || return 1
+
+    # Save timestamp
+    date +%s > "${CACHE_DIR}/${name}.timestamp" 2>/dev/null || return 1
+
+    return 0
+}
+
+read_cache() {
+    local name="$1"
+
+    if ! cache_exists "$name"; then
+        return 1
+    fi
+
+    # Output the cached content
+    cat "${CACHE_DIR}/${name}.output"
+
+    # Delete cache files after reading
+    rm -f "${CACHE_DIR}/${name}.output" "${CACHE_DIR}/${name}.timestamp" 2>/dev/null
+
+    return 0
 }
 
 cmd_create() {
@@ -122,11 +162,30 @@ cmd_send() {
 cmd_read() {
     local name="${1:-}"
     local scrollback=100
+    local wait_mode=false
+    local timeout=300
 
-    # Check for --scrollback option
-    if [[ "${2:-}" == --scrollback=* ]]; then
-        scrollback="${2#--scrollback=}"
-    fi
+    # Parse options
+    shift 2>/dev/null || true
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --scrollback=*)
+                scrollback="${1#--scrollback=}"
+                shift
+                ;;
+            --wait)
+                wait_mode=true
+                shift
+                ;;
+            --timeout=*)
+                timeout="${1#--timeout=}"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
 
     if [[ -z "$name" ]]; then
         echo "Error: read requires <name>" >&2
@@ -136,13 +195,43 @@ cmd_read() {
     local session
     session=$(session_name "$name")
 
-    if ! tmux has-session -t "$session" 2>/dev/null; then
-        echo "Error: Session '$name' not found" >&2
-        return 2
+    # Wait mode: poll until session exits, then read cache
+    if [[ "$wait_mode" == true ]]; then
+        local elapsed=0
+        local interval=0.5
+
+        while tmux has-session -t "$session" 2>/dev/null; do
+            if (( $(echo "$elapsed >= $timeout" | bc -l) )); then
+                echo "Error: Timeout after ${timeout}s waiting for session to exit" >&2
+                return 3
+            fi
+            sleep "$interval"
+            elapsed=$(echo "$elapsed + $interval" | bc -l)
+        done
+
+        # Session has exited, read from cache
+        if read_cache "$name"; then
+            return 0
+        else
+            echo "Error: Session exited but cache not found" >&2
+            return 2
+        fi
     fi
 
-    # Capture pane with scrollback
-    tmux capture-pane -t "$session" -p -S "-$scrollback"
+    # Non-wait mode: try live session first, then cache
+    if tmux has-session -t "$session" 2>/dev/null; then
+        # Capture pane with scrollback
+        tmux capture-pane -t "$session" -p -S "-$scrollback"
+        return 0
+    fi
+
+    # Session not running, try cache
+    if read_cache "$name"; then
+        return 0
+    fi
+
+    echo "Error: Session '$name' not found" >&2
+    return 2
 }
 
 cmd_wait() {
@@ -204,6 +293,9 @@ cmd_kill() {
         return 2
     fi
 
+    # Cache session output before killing
+    cache_session "$name" || echo "Warning: Failed to cache session output" >&2
+
     tmux kill-session -t "$session"
     local rc=$?
 
@@ -215,7 +307,35 @@ cmd_kill() {
 
 cmd_list() {
     echo "Active pty-session sessions:"
-    tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${PREFIX}" | sed "s/^${PREFIX}/  /" || echo "  (none)"
+
+    local has_sessions=false
+
+    # List running sessions
+    if tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -q "^${PREFIX}"; then
+        tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${PREFIX}" | while read -r session; do
+            local name="${session#${PREFIX}}"
+            printf "  %-20s running\n" "$name"
+            has_sessions=true
+        done
+    fi
+
+    # List killed sessions (from cache)
+    if [[ -d "$CACHE_DIR" ]]; then
+        shopt -s nullglob
+        for cache_file in "${CACHE_DIR}"/*.output; do
+            if [[ -f "$cache_file" ]]; then
+                local name
+                name=$(basename "$cache_file" .output)
+                printf "  %-20s killed\n" "$name"
+                has_sessions=true
+            fi
+        done
+        shopt -u nullglob
+    fi
+
+    if [[ "$has_sessions" == false ]]; then
+        echo "  (none)"
+    fi
 }
 
 # Main dispatch
