@@ -75,5 +75,35 @@
 - [x] Feature 3: dead session cache
 - [x] Documentation
 - [x] Tests (basic)
-- [ ] Adversarial tests
-- [ ] Formal test files
+- [x] Adversarial tests
+- [x] Formal test files
+
+## Session 2: 2026-01-30 (post-epistemic review)
+
+### Actions
+
+**Formal test files created:**
+- `tests/automated/test_pty_session_improvements.sh` - 6 basic tests, all pass
+- `tests/automated/test_pty_session_adversarial.sh` - 4 adversarial tests, all pass with warnings
+
+**Adversarial test findings:**
+- Path traversal: Sanitized (session names with ../ don't escape cache)
+- Large output (1MB+): Handled correctly
+- Session names with `/`: Creates session but doesn't create subdirectories (safe)
+- Resource exhaustion: 50 concurrent sessions handled correctly
+
+**AI teams commands:**
+- Tested `/start-ai-teams` successfully via worker earlier in session
+- `/ai-teams-help` and `/epistemic-help` tested manually
+- Automated testing requires longer Claude startup times (deferred)
+
+### Next Steps
+
+1. Commit test files
+2. Update progress log
+3. Push to remote
+4. Consider AI teams automated tests as future work
+
+### Status
+
+All pty-session improvement work complete and tested.
