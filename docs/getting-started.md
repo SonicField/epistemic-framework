@@ -12,6 +12,35 @@ This creates symlinks in `~/.claude/commands/` for all commands. Restart Claude 
 
 ## First Use
 
+### For AI teams (supervisor/worker patterns)
+
+When you want to set up a project for AI teams:
+
+```
+/start-ai-teams
+```
+
+The command asks for your terminal goal and creates:
+- `.epistemic/supervisor.md` - Your state and learnings
+- `.epistemic/decisions.log` - Append-only decision record
+- `.epistemic/workers/` - Worker task files go here
+
+You become the supervisor. Decompose work into tasks. Spawn workers. Capture learnings.
+
+Need help?
+
+```
+/ai-teams-help
+```
+
+Interactive guidance on spawning workers, writing tasks, task scope, monitoring.
+
+```
+/epistemic-help
+```
+
+Interactive guidance on the epistemic framework itself - goals, falsifiability, investigations.
+
 ### During a work session
 
 When you want a check on your current work:

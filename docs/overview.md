@@ -46,9 +46,13 @@ Claude Code slash commands that apply these principles:
 | Command | Purpose |
 |---------|---------|
 | `/epistemic` | Review and dispatch - detects context, routes to appropriate verification |
+| `/start-ai-teams` | Bootstrap project for AI teams (creates `.epistemic/` structure) |
+| `/ai-teams-help` | Interactive guidance for AI teams usage |
+| `/epistemic-help` | Interactive guidance for the epistemic framework |
 | `/epistemic-discovery` | Read-only archaeology of a messy project |
 | `/epistemic-discovery-verify` | Verify discovery report is complete (auto-dispatched) |
 | `/epistemic-recovery` | Step-wise restructuring with confirmation |
+| `/epistemic-investigation` | Hypothesis testing through isolated experiments |
 
 The dispatch design keeps one entry point (`/epistemic`) while allowing context-specific verification. Run `/epistemic` after discovery and it verifies the report. Run it after recovery and it reviews the work. Run it mid-session and it audits for drift.
 

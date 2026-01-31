@@ -173,10 +173,9 @@ pty-session read worker --wait
 When you kill a session with `pty-session kill`, the final screen content is captured to `~/.pty-session/cache/`. This cache persists until you read it with `pty-session read`, after which it is automatically deleted.
 
 **Naturally exited sessions:**
-If a session's command completes on its own (e.g., `echo done` finishes and exits), no cache is created. The output is lost when the session exits.
+If a session's command completes on its own (e.g., `echo done` finishes and exits), no cache is created. The output is lost.
 
-**Implication:**
-If you need to preserve a session's output, always use `pty-session kill` rather than letting it exit naturally.
+To preserve output, always kill sessions explicitly.
 
 ## Cache Directory
 
@@ -192,10 +191,7 @@ Cache files are automatically deleted after being read.
 
 pty-session creates a fresh login shell with full user permissions. Commands run through pty-session inherit the user's complete environment and capabilities, not the sandboxed context of Claude's Bash tool.
 
-This means:
-- Environment variables (like proxy settings) may differ from the Bash tool context
-- Commands that fail in Bash due to sandbox restrictions may succeed via pty-session
-- Claude can effectively do anything the user can do through their terminal
+Environment variables (like proxy settings) may differ from the Bash tool context. Commands that fail in Bash due to sandbox restrictions may succeed via pty-session. Claude can effectively do anything the user can do through their terminal.
 
 This is powerful but requires trust. The tool exists for legitimate automation (testing, REPLs, interactive programs). It should not be used to circumvent intended safety measures.
 

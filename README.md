@@ -41,6 +41,18 @@ Run this after any session. It detects context and dispatches:
 - After `/epistemic-recovery` → reviews the recovery work
 - Otherwise → general epistemic review
 
+### AI Teams Tools
+
+Commands for setting up and using AI teams (supervisor/worker patterns):
+
+- [/start-ai-teams](claude_tools/start-ai-teams.md) - Bootstrap project with `.epistemic/` structure (one command setup)
+- [/ai-teams-help](claude_tools/ai-teams-help.md) - Interactive guidance for AI teams usage
+- [/epistemic-help](claude_tools/epistemic-help.md) - Interactive guidance for the epistemic framework
+
+For AI-as-supervisor or AI-as-worker roles:
+- [AI Teams Supervisor](claude_tools/ai-teams-supervisor.md) - Role and responsibilities for supervisor
+- [AI Teams Worker](claude_tools/ai-teams-worker.md) - Role and responsibilities for worker
+
 ### Workflow Commands
 
 - [/epistemic-discovery](claude_tools/epistemic-discovery.md) - Read-only archaeology for messy projects
