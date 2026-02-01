@@ -1,12 +1,12 @@
 # NBS Teams
 
-NBS Teams is a supervisor/worker pattern for multi-agent AI work.
+Supervisor/worker pattern for multi-agent AI work.
 
 ## The Problem
 
-A single Claude session accumulates context. Context accumulation causes drift. You start solving problem A, get distracted by sub-problem B, and emerge hours later having solved neither.
+Context accumulates. Drift follows. You start on problem A, get distracted by sub-problem B, emerge hours later having solved neither.
 
-Workers solve this. Each worker gets a fresh context, a specific task, and success criteria. They execute and report. The supervisor maintains the terminal goal across workers.
+Workers fix this. Fresh context, specific task, success criteria. Execute and report. The supervisor holds the terminal goal.
 
 ## The Pattern
 
@@ -68,9 +68,21 @@ If you're writing implementation steps, scope is too narrow. Set the goal, let w
 | Command | Purpose |
 |---------|---------|
 | `/start-nbs-teams` | Bootstrap `.nbs/` structure |
-| `/nbs-teams-help` | Interactive guidance (for Claude) |
+| `/nbs-teams-help` | Interactive guidance - ask Claude for help |
 | `/nbs-teams-supervisor` | Supervisor role reference |
 | `/nbs-teams-worker` | Worker role reference |
+
+### Getting Help
+
+Run `/nbs-teams-help` when stuck. It asks what you need help with:
+- Starting a project
+- Spawning workers
+- Writing task files
+- Task scope
+- Monitoring
+- 3Ws and self-check
+
+Claude walks you through interactively, using your actual project for examples if `.nbs/` exists. Mentor, not manual.
 
 ## Quick Start
 
