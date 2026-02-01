@@ -8,7 +8,20 @@ cd nbs-framework
 ./bin/install.sh
 ```
 
-This creates symlinks in `~/.claude/commands/` for all commands. Restart Claude Code to pick them up.
+This:
+1. Processes command templates with your install path
+2. Creates `~/.nbs/` with commands and symlinks to concepts/docs/bin
+3. Creates symlinks in `~/.claude/commands/` for Claude Code
+
+Restart Claude Code to pick up the commands.
+
+### Custom Install Location
+
+For testing or alternative setups:
+
+```bash
+./bin/install.sh --prefix=/path/to/custom/location
+```
 
 ## First Use
 

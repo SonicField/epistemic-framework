@@ -91,10 +91,14 @@ Project plans and progress logs live in `planning/`:
 ## Installation
 
 ```bash
+git clone https://github.com/SonicField/nbs-framework.git
+cd nbs-framework
 ./bin/install.sh
 ```
 
-This creates symlinks in `~/.claude/commands/` for all Claude Code tools.
+This creates `~/.nbs/` with processed commands and symlinks in `~/.claude/commands/`.
+
+For custom install location: `./bin/install.sh --prefix=/path/to/location`
 
 ## Author
 
