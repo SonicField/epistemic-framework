@@ -17,12 +17,53 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Validate HOME environment variable
+validate_home() {
+    if [[ -z "${HOME:-}" ]]; then
+        echo "ERROR: HOME environment variable is not set."
+        echo ""
+        echo "The NBS Framework installs to \$HOME/.nbs by default and creates"
+        echo "symlinks in \$HOME/.claude/commands/ for Claude Code integration."
+        echo ""
+        echo "To fix this, either:"
+        echo "  1. Set HOME to a valid directory: export HOME=/path/to/home"
+        echo "  2. Use explicit paths: $0 --prefix=/path/to/install"
+        echo ""
+        echo "Note: Even with --prefix, HOME must be set for Claude Code symlinks."
+        return 1
+    fi
+
+    if [[ ! -d "$HOME" ]]; then
+        echo "ERROR: HOME ($HOME) is not a valid directory."
+        echo ""
+        echo "The NBS Framework requires HOME to point to an existing directory"
+        echo "because it creates symlinks in \$HOME/.claude/commands/."
+        echo ""
+        echo "To fix this, either:"
+        echo "  1. Create the directory: mkdir -p \"$HOME\""
+        echo "  2. Set HOME to a valid directory: export HOME=/path/to/home"
+        return 1
+    fi
+
+    if [[ ! -w "$HOME" ]]; then
+        echo "ERROR: HOME ($HOME) is not writable."
+        echo ""
+        echo "The NBS Framework needs to create \$HOME/.claude/commands/."
+        echo "Please check permissions on $HOME."
+        return 1
+    fi
+
+    return 0
+}
+
 # Parse arguments
-PREFIX="$HOME/.nbs"
+PREFIX=""
+EXPLICIT_PREFIX=false
 for arg in "$@"; do
     case $arg in
         --prefix=*)
             PREFIX="${arg#--prefix=}"
+            EXPLICIT_PREFIX=true
             ;;
         --help|-h)
             echo "Usage: $0 [--prefix=PATH]"
@@ -36,6 +77,16 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+# Validate HOME (always needed for ~/.claude/commands)
+if ! validate_home; then
+    exit 1
+fi
+
+# Set default prefix if not explicitly provided
+if [[ -z "$PREFIX" ]]; then
+    PREFIX="$HOME/.nbs"
+fi
 
 # Resolve to absolute path
 PREFIX="$(cd "$(dirname "$PREFIX")" 2>/dev/null && pwd)/$(basename "$PREFIX")" || PREFIX="$PREFIX"

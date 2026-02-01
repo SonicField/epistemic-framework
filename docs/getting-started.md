@@ -129,18 +129,16 @@ The AI reads these when it needs them. You read them when you want to.
 
 ## Testing
 
-Verify the installation:
+Run the test suite:
 
 ```bash
-./tests/automated/test_install.sh
+./tests/run_all.sh
 ```
 
-Run all tests:
+For quick tests (skips slow AI evaluation tests):
 
 ```bash
-./tests/automated/test_nbs_command.sh
-./tests/automated/test_nbs_discovery.sh
-./tests/automated/test_nbs_recovery.sh
+./tests/run_all.sh --quick
 ```
 
 Tests use AI to evaluate AI. The verdict files contain deterministic pass/fail judgements.

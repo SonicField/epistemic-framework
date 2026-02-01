@@ -132,10 +132,20 @@ Check for these failure modes:
 
 ### Step 1: Foundation Check
 
-Before anything else, ask yourself: **Have I read `{{NBS_ROOT}}/concepts/goals.md` in this session?**
+Before anything else, ask yourself: **Do I have clear memory of having read the pillars in this session?**
 
-- If **yes** (you have clear memory of its contents): proceed to Step 2.
-- If **no** or **unsure**: read `{{NBS_ROOT}}/concepts/goals.md` now. Goals are the foundation - everything else exists in service of them.
+- If **yes** (you can recall specific content from goals.md, falsifiability.md, etc.): proceed to Step 2.
+- If **no** or **unsure**: Read the foundation documents now. Context compaction erodes pillar knowledge - re-reading restores it.
+
+**Minimum read set** (if no clear memory):
+1. `{{NBS_ROOT}}/concepts/goals.md` - the foundation
+2. `{{NBS_ROOT}}/concepts/falsifiability.md` - the method
+3. `{{NBS_ROOT}}/concepts/rhetoric.md` - human intent and failure modes
+4. `{{NBS_ROOT}}/concepts/bullshit-detection.md` - honest reporting
+5. `{{NBS_ROOT}}/concepts/verification-cycle.md` - the process
+6. `{{NBS_ROOT}}/concepts/zero-code-contract.md` - human-AI roles
+
+The pillars are short (~300 lines total). The cost of reading them occasionally is lower than the cost of drift.
 
 The framework lives at: `{{NBS_ROOT}}/` (or locate via the symlink at `~/.claude/commands/nbs.md`).
 
@@ -151,17 +161,17 @@ The framework lives at: `{{NBS_ROOT}}/` (or locate via the symlink at `~/.claude
 
 ### Step 3: Deepen Where Needed
 
-For any dimension where you lack clarity, read the relevant pillar before concluding:
+For any dimension where you lack clarity, read the relevant pillar before concluding. **When in doubt, read. The cost of re-reading is lower than the cost of drift.**
 
-| Dimension | Read |
-|-----------|------|
-| Goals (terminal, instrumental, strategic, tactical) | `{{NBS_ROOT}}/concepts/goals.md` |
-| Human intent / Pathos | `{{NBS_ROOT}}/concepts/goals.md` then `{{NBS_ROOT}}/concepts/rhetoric.md` |
-| Ethos / Logos failures | `{{NBS_ROOT}}/concepts/rhetoric.md` |
-| Verification discipline | `{{NBS_ROOT}}/concepts/verification-cycle.md` |
-| Falsifiability | `{{NBS_ROOT}}/concepts/falsifiability.md` |
-| Honest reporting | `{{NBS_ROOT}}/concepts/bullshit-detection.md` |
-| Human-AI roles | `{{NBS_ROOT}}/concepts/zero-code-contract.md` |
+| Dimension | Read | Signal you need to read |
+|-----------|------|------------------------|
+| Goals | `{{NBS_ROOT}}/concepts/goals.md` | Can't state terminal goal in one sentence |
+| Human intent / Pathos | `{{NBS_ROOT}}/concepts/goals.md` then `{{NBS_ROOT}}/concepts/rhetoric.md` | Don't know why the human wants this |
+| Ethos / Logos failures | `{{NBS_ROOT}}/concepts/rhetoric.md` | Unsure if issue is authority-appeal or aesthetic detour |
+| Verification discipline | `{{NBS_ROOT}}/concepts/verification-cycle.md` | Unclear what phase we're in |
+| Falsifiability | `{{NBS_ROOT}}/concepts/falsifiability.md` | Making claims without falsifiers |
+| Honest reporting | `{{NBS_ROOT}}/concepts/bullshit-detection.md` | Only reporting positive outcomes |
+| Human-AI roles | `{{NBS_ROOT}}/concepts/zero-code-contract.md` | Unclear who decides what |
 
 **Judgement call**: If the issue is obvious (no plan exists), don't spend tokens reading pillars. If the issue is nuanced (is this Ethos or Logos? why does the human want this?), read for guidance.
 
