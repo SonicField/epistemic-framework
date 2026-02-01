@@ -122,4 +122,4 @@ Don't use when:
 ## See Also
 
 - [pty-session](pty-session.md) - How to spawn workers
-- [Why NBS](../concepts/Why-NBS.md) - The philosophy behind the framework
+- [Why NBS](Why-NBS.md) - The philosophy behind the framework

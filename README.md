@@ -4,6 +4,7 @@ A framework for honest collaboration between humans and AI systems.
 
 ## Documentation
 
+- [Why NBS](docs/Why-NBS.md) - The philosophy: falsifiability over bullshit
 - [Overview](docs/overview.md) - Why this exists and how it works
 - [Getting Started](docs/getting-started.md) - Installation and first use
 - [NBS Teams](docs/nbs-teams.md) - Supervisor/worker patterns for multi-agent work
