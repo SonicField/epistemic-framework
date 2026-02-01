@@ -160,6 +160,6 @@ pty-session kill build
 
 ## Location
 
-The `pty-session` script is at: `~/claude_docs/nbs-framework/bin/pty-session`
+The `pty-session` script is at: `{{NBS_ROOT}}/bin/pty-session`
 
 Ensure it's in your PATH or use the full path.

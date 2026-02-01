@@ -132,12 +132,12 @@ Check for these failure modes:
 
 ### Step 1: Foundation Check
 
-Before anything else, ask yourself: **Have I read `concepts/goals.md` in this session?**
+Before anything else, ask yourself: **Have I read `{{NBS_ROOT}}/concepts/goals.md` in this session?**
 
 - If **yes** (you have clear memory of its contents): proceed to Step 2.
-- If **no** or **unsure**: read `concepts/goals.md` now. Goals are the foundation - everything else exists in service of them.
+- If **no** or **unsure**: read `{{NBS_ROOT}}/concepts/goals.md` now. Goals are the foundation - everything else exists in service of them.
 
-The framework lives at: `~/claude_docs/nbs-framework/` (or locate via the symlink at `~/.claude/commands/nbs.md`).
+The framework lives at: `{{NBS_ROOT}}/` (or locate via the symlink at `~/.claude/commands/nbs.md`).
 
 ### Step 2: Initial Review
 
@@ -155,13 +155,13 @@ For any dimension where you lack clarity, read the relevant pillar before conclu
 
 | Dimension | Read |
 |-----------|------|
-| Goals (terminal, instrumental, strategic, tactical) | `concepts/goals.md` |
-| Human intent / Pathos | `concepts/goals.md` then `concepts/rhetoric.md` |
-| Ethos / Logos failures | `concepts/rhetoric.md` |
-| Verification discipline | `concepts/verification-cycle.md` |
-| Falsifiability | `concepts/falsifiability.md` |
-| Honest reporting | `concepts/bullshit-detection.md` |
-| Human-AI roles | `concepts/zero-code-contract.md` |
+| Goals (terminal, instrumental, strategic, tactical) | `{{NBS_ROOT}}/concepts/goals.md` |
+| Human intent / Pathos | `{{NBS_ROOT}}/concepts/goals.md` then `{{NBS_ROOT}}/concepts/rhetoric.md` |
+| Ethos / Logos failures | `{{NBS_ROOT}}/concepts/rhetoric.md` |
+| Verification discipline | `{{NBS_ROOT}}/concepts/verification-cycle.md` |
+| Falsifiability | `{{NBS_ROOT}}/concepts/falsifiability.md` |
+| Honest reporting | `{{NBS_ROOT}}/concepts/bullshit-detection.md` |
+| Human-AI roles | `{{NBS_ROOT}}/concepts/zero-code-contract.md` |
 
 **Judgement call**: If the issue is obvious (no plan exists), don't spend tokens reading pillars. If the issue is nuanced (is this Ethos or Logos? why does the human want this?), read for guidance.
 

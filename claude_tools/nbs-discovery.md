@@ -68,9 +68,9 @@ For each artefact found, **ask the human**:
 ```markdown
 | Artefact | Location | Purpose | Status | Action |
 |----------|----------|---------|--------|--------|
-| file.py | ~/proj/v2/ | Parallel depickling | Works, verified | Keep - core result |
-| test_v2.py | ~/proj/old/ | Alternative approach | Failed | Discard - document why |
-| notes.md | ~/docs/ | Design thinking | Partial | Extract key decisions |
+| file.py | [project]/v2/ | Parallel depickling | Works, verified | Keep - core result |
+| test_v2.py | [project]/old/ | Alternative approach | Failed | Discard - document why |
+| notes.md | [docs]/ | Design thinking | Partial | Extract key decisions |
 ```
 
 ### Phase 4: Gap Analysis
