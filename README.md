@@ -6,6 +6,7 @@ A framework for honest collaboration between humans and AI systems.
 
 - [Overview](docs/overview.md) - Why this exists and how it works
 - [Getting Started](docs/getting-started.md) - Installation and first use
+- [NBS Teams](docs/nbs-teams.md) - Supervisor/worker patterns for multi-agent work
 - [Testing Strategy](docs/testing-strategy.md) - AI-evaluates-AI testing approach
 - [Interactive Testing](docs/interactive-testing.md) - Multi-turn testing with pty-session
 - [pty-session Reference](docs/pty-session.md) - Terminal session manager for automation
@@ -43,7 +44,9 @@ Run this after any session. It detects context and dispatches:
 
 ### NBS Teams Tools
 
-Commands for setting up and using NBS teams (supervisor/worker patterns):
+Supervisor/worker patterns for multi-agent AI work. See [NBS Teams](docs/nbs-teams.md) for the full overview.
+
+Commands for setting up and using NBS teams:
 
 - [/start-nbs-teams](claude_tools/start-nbs-teams.md) - Bootstrap project with `.nbs/` structure (one command setup)
 - [/nbs-teams-help](claude_tools/nbs-teams-help.md) - Interactive guidance for NBS teams usage
