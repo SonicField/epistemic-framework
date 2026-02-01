@@ -12,6 +12,7 @@ A framework for honest collaboration between humans and AI systems.
 - [Interactive Testing](docs/interactive-testing.md) - Multi-turn testing with pty-session
 - [pty-session Reference](docs/pty-session.md) - Terminal session manager for automation
 - [Style Guide](docs/STYLE.md) - Internal reference for AI writing these materials
+- [Document Tools](docs/nbs-doc.md) - Analysis, planning, and description tools
 
 ## Examples
 
@@ -61,6 +62,17 @@ For AI-as-supervisor or AI-as-worker roles:
 
 - [/nbs-discovery](claude_tools/nbs-discovery.md) - Read-only archaeology for messy projects
 - [/nbs-recovery](claude_tools/nbs-recovery.md) - Step-wise restructuring with confirmation
+
+### Document Tools
+
+Tools for working with documents - analysing, planning, and describing:
+
+- [/nbs-doc-help](claude_tools/nbs-doc-help.md) - Interactive guidance for document tools
+- [/nbs-doc-analyse](claude_tools/nbs-doc-analyse.md) - Detect BS, find actual vs stated goals
+- [/nbs-doc-plan](claude_tools/nbs-doc-plan.md) - Plan documents before writing
+- [/nbs-doc-describe](claude_tools/nbs-doc-describe.md) - Help describe systems, code, concepts
+
+See [Document Tools](docs/nbs-doc.md) for the full overview.
 
 ### Side Quest Commands
 
