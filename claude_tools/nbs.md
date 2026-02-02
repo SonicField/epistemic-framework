@@ -137,7 +137,7 @@ Before anything else, ask yourself: **Do I have clear memory of having read the 
 - If **yes** (you can recall specific content from goals.md, falsifiability.md, etc.): proceed to Step 2.
 - If **no** or **unsure**: Read the foundation documents now. Context compaction erodes pillar knowledge - re-reading restores it.
 
-**Minimum read set** (if no clear memory):
+**Read all six pillars** (required, no exceptions):
 1. `{{NBS_ROOT}}/concepts/goals.md` - the foundation
 2. `{{NBS_ROOT}}/concepts/falsifiability.md` - the method
 3. `{{NBS_ROOT}}/concepts/rhetoric.md` - human intent and failure modes
@@ -145,7 +145,7 @@ Before anything else, ask yourself: **Do I have clear memory of having read the 
 5. `{{NBS_ROOT}}/concepts/verification-cycle.md` - the process
 6. `{{NBS_ROOT}}/concepts/zero-code-contract.md` - human-AI roles
 
-The pillars are short (~300 lines total). The cost of reading them occasionally is lower than the cost of drift.
+Do not skip any. Do not read "the most relevant ones." Read all six.
 
 The framework lives at: `{{NBS_ROOT}}/` (or locate via the symlink at `~/.claude/commands/nbs.md`).
 
