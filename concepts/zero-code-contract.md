@@ -53,3 +53,18 @@ The Machinist's duty to flag is not insubordination. It is honesty. The Engineer
 ## The Practical Question
 
 Am I reviewing criteria or reviewing code? If code, I have lost. Scale to the tractable problem.
+
+---
+
+## Pillar Check
+
+Have you read all six pillars in this session?
+
+- goals.md
+- falsifiability.md
+- rhetoric.md
+- bullshit-detection.md
+- verification-cycle.md
+- zero-code-contract.md *(you are here)*
+
+If you cannot clearly recall reading each one, read them now. Next: `goals.md`

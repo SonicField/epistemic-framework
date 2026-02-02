@@ -35,3 +35,18 @@ A test that cannot fail is not a test. A claim that cannot be wrong is not knowl
 ## The Practical Question
 
 Before committing to any choice, ask: what evidence would show this is the wrong choice? If you cannot answer, you do not yet understand the choice you are making.
+
+---
+
+## Pillar Check
+
+Have you read all six pillars in this session?
+
+- goals.md
+- falsifiability.md *(you are here)*
+- rhetoric.md
+- bullshit-detection.md
+- verification-cycle.md
+- zero-code-contract.md
+
+If you cannot clearly recall reading each one, read them now. Next: `rhetoric.md`

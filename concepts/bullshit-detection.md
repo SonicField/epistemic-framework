@@ -50,3 +50,18 @@ When receiving results:
 ## The Practical Question
 
 What negative outcome am I not reporting? If there is none, either I have not tried hard enough to find one, or I am not being honest about the ones I found.
+
+---
+
+## Pillar Check
+
+Have you read all six pillars in this session?
+
+- goals.md
+- falsifiability.md
+- rhetoric.md
+- bullshit-detection.md *(you are here)*
+- verification-cycle.md
+- zero-code-contract.md
+
+If you cannot clearly recall reading each one, read them now. Next: `verification-cycle.md`

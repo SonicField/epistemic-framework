@@ -41,3 +41,18 @@ Asking is not weakness. It is the only honest response to uncertainty.
 2. Am I trusting authority (including my own) over evidence?
 3. What information sources have I not consulted?
 4. Does the human have context I am missing?
+
+---
+
+## Pillar Check
+
+Have you read all six pillars in this session?
+
+- goals.md
+- falsifiability.md
+- rhetoric.md *(you are here)*
+- bullshit-detection.md
+- verification-cycle.md
+- zero-code-contract.md
+
+If you cannot clearly recall reading each one, read them now. Next: `bullshit-detection.md`

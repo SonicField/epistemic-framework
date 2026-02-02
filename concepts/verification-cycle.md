@@ -52,3 +52,18 @@ Every assertion message answers: What was expected? What occurred? Why does it m
 ## The Practical Question
 
 Before moving to the next step: what did I learn? Write it down. If you cannot articulate what you learned, you were not paying attention.
+
+---
+
+## Pillar Check
+
+Have you read all six pillars in this session?
+
+- goals.md
+- falsifiability.md
+- rhetoric.md
+- bullshit-detection.md
+- verification-cycle.md *(you are here)*
+- zero-code-contract.md
+
+If you cannot clearly recall reading each one, read them now. Next: `zero-code-contract.md`

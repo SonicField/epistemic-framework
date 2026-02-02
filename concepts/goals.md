@@ -53,3 +53,18 @@ The antidote is periodic re-grounding: stop, state the terminal goal, check alig
 3. Why does the human want this? Have I asked?
 4. When did I last check alignment with the terminal goal?
 5. Am I fixing something that matters, or something that is merely in front of me?
+
+---
+
+## Pillar Check
+
+Have you read all six pillars in this session?
+
+- goals.md *(you are here)*
+- falsifiability.md
+- rhetoric.md
+- bullshit-detection.md
+- verification-cycle.md
+- zero-code-contract.md
+
+If you cannot clearly recall reading each one, read them now. Next: `falsifiability.md`
