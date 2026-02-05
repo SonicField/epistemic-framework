@@ -67,7 +67,7 @@ If you're writing implementation steps, scope is too narrow. Set the goal, let w
 
 | Command | Purpose |
 |---------|---------|
-| `/start-nbs-teams` | Bootstrap `.nbs/` structure |
+| `/nbs-teams-start` | Bootstrap `.nbs/` structure |
 | `/nbs-teams-help` | Interactive guidance - ask Claude for help |
 | `/nbs-teams-supervisor` | Supervisor role reference |
 | `/nbs-teams-worker` | Worker role reference |
@@ -86,7 +86,7 @@ Claude walks you through interactively, using your actual project for examples i
 
 ## Quick Start
 
-1. Run `/start-nbs-teams`
+1. Run `/nbs-teams-start`
 2. Answer the terminal goal question
 3. Decompose into worker tasks
 4. Spawn workers with pty-session

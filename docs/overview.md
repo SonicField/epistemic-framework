@@ -46,7 +46,7 @@ Claude Code slash commands that apply these principles:
 | Command | Purpose |
 |---------|---------|
 | `/nbs` | Review and dispatch - detects context, routes to appropriate verification |
-| `/start-nbs-teams` | Bootstrap project for NBS teams (creates `.nbs/` structure) |
+| `/nbs-teams-start` | Bootstrap project for NBS teams (creates `.nbs/` structure) |
 | `/nbs-teams-help` | Interactive guidance for NBS teams usage |
 | `/nbs-help` | Interactive guidance for the NBS framework |
 | `/nbs-discovery` | Read-only archaeology of a messy project |

@@ -50,7 +50,7 @@ Supervisor/worker patterns for multi-agent AI work. See [NBS Teams](docs/nbs-tea
 
 Commands for setting up and using NBS teams:
 
-- [/start-nbs-teams](claude_tools/start-nbs-teams.md) - Bootstrap project with `.nbs/` structure (one command setup)
+- [/nbs-teams-start](claude_tools/nbs-teams-start.md) - Bootstrap project with `.nbs/` structure (one command setup)
 - [/nbs-teams-help](claude_tools/nbs-teams-help.md) - Interactive guidance for NBS teams usage
 - [/nbs-help](claude_tools/nbs-help.md) - Interactive guidance for the NBS framework
 

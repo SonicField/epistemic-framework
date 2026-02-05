@@ -30,7 +30,7 @@ For testing or alternative setups:
 When you want to set up a project for NBS teams:
 
 ```
-/start-nbs-teams
+/nbs-teams-start
 ```
 
 The command asks for your terminal goal and creates:

@@ -49,7 +49,7 @@ For each topic, guide interactively. Don't lecture - explain briefly, then ask i
 ### Starting a new project
 
 **Brief answer:**
-> "Run `/start-nbs-teams`. It asks for your terminal goal and creates the `.nbs/` structure."
+> "Run `/nbs-teams-start`. It asks for your terminal goal and creates the `.nbs/` structure."
 
 **Check understanding:**
 > "Do you have a terminal goal in mind, or would you like help defining one?"
@@ -60,7 +60,7 @@ If they need help with terminal goals, explain:
 - Example: "Implement soma's lexer and parser as C Python extension modules, passing all existing tests"
 
 **Follow-up:**
-> "Ready to run `/start-nbs-teams`, or do you have other questions?"
+> "Ready to run `/nbs-teams-start`, or do you have other questions?"
 
 ---
 
@@ -222,7 +222,7 @@ Then:
 - **One concept at a time.** Don't overwhelm with information.
 - **Use their context.** If they have an active project, reference it.
 - **Check understanding.** Ask if they need more detail or have follow-ups.
-- **Direct to skills.** If they need action (not guidance), point them to `/start-nbs-teams` or the supervisor/worker docs.
+- **Direct to skills.** If they need action (not guidance), point them to `/nbs-teams-start` or the supervisor/worker docs.
 
 ---
 
