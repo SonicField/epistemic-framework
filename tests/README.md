@@ -62,6 +62,7 @@ cd tests/automated
 ./test_pty_session_adv_no_collision.sh
 ./test_pty_session_adv_invalid.sh
 ./test_evaluator_catches_bad.sh
+./test_supervisor_pty_awareness.sh
 ```
 
 ### Test Descriptions
@@ -86,6 +87,7 @@ cd tests/automated
 | `test_pty_session_adv_no_collision.sh` | Tests pty-session isolation from user sessions | Fails if user sessions affected |
 | `test_pty_session_adv_invalid.sh` | Tests pty-session error handling | Fails if invalid input crashes |
 | `test_evaluator_catches_bad.sh` | Meta-test: evaluator catches bad reports | Fails if evaluator passes a known-bad report |
+| `test_supervisor_pty_awareness.sh` | Tests supervisor knows pty-session is available | Fails if AI hedges about pty-session availability |
 
 ### Scenarios
 
@@ -107,6 +109,10 @@ cd tests/automated
 **investigation/**: Investigation context with status file.
 - `INVESTIGATION-STATUS.md` - Mock investigation in progress
 - Used to test `/nbs` dispatch to investigation review mode
+
+**supervisor_spawn/**: Minimal supervisor context with `.nbs/` structure.
+- Tests that supervisor role knows pty-session is available
+- Used to test `/nbs-teams-supervisor` pty-session awareness
 
 ### Verdict Files
 
