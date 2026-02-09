@@ -84,6 +84,16 @@ Run this when you want to test a hypothesis before committing to a direction. Cr
 
 - [/nbs-discovery-verify](claude_tools/nbs-discovery-verify.md) - Verify discovery report completeness (auto-dispatched by /nbs)
 
+## Sub-Projects
+
+### Terminal Weathering
+
+Progressive Python-to-Rust conversion using NBS principles. The name reflects both the tooling (terminal-based) and the process (weathering produces rust on iron, working from the surface inward).
+
+- [Terminal Weathering Documentation](terminal-weathering/docs/) - Theory, getting started, methodology
+- [Concept](terminal-weathering/concepts/terminal-weathering.md) - The philosophy and phases
+- [/nbs-terminal-weathering](claude_tools/nbs-terminal-weathering.md) - The tool command
+
 ## Testing
 
 The framework includes automated tests using a novel AI-evaluates-AI approach.
