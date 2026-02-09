@@ -7,7 +7,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(git:*), Bash
 
 **MANDATORY FIRST ACTION — DO NOT SKIP**
 
-Read `terminal-weathering/concepts/terminal-weathering.md` before proceeding. That document defines the philosophy. This document defines what you DO.
+Read `{{NBS_ROOT}}/terminal-weathering/concepts/terminal-weathering.md` before proceeding. That document defines the philosophy. This document defines what you DO.
 
 Then detect context and dispatch.
 

@@ -124,7 +124,7 @@ done
 
 # 3. Symlink supporting directories
 echo "Creating symlinks to supporting directories..."
-for dir in concepts docs templates bin; do
+for dir in concepts docs templates bin terminal-weathering; do
     target="$PREFIX/$dir"
     if [[ -e "$target" || -L "$target" ]]; then
         rm -rf "$target"
