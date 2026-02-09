@@ -81,21 +81,7 @@ Evidence: You read a discovery report and created or executed a recovery plan.
 
 If branch starts with `weathering/` or `.nbs/terminal-weathering/` exists:
 
-→ **Apply normal NBS review below, PLUS the following correctness checks.** These are additional, not replacement.
-
-**Terminal Weathering Correctness Review:**
-
-| Check | What to look for |
-|-------|-----------------|
-| **Shared types** | Are types crossing the conversion boundary identified? Are they verified compatible across both implementations? |
-| **Reference semantics** | Has reference/pointer indirection been analysed? Do aliasing and mutation visibility behave identically? |
-| **Type identity** | Have `isinstance`, `type()`, and class identity checks been verified against Rust-backed objects? |
-| **Overlay mechanism** | Is there a clear mechanism for both implementations to coexist? Is it documented? |
-| **Existing test suite** | Has the full existing test suite been run against both implementations? Not just new tests. |
-| **Correctness vs performance balance** | Is the Assess phase checking correctness before performance? Correctness gate must pass before performance is even considered. |
-| **Failed conversion analysis** | Are failed/reverted conversions documented with what they taught? Are negative results being reported? |
-
-**Output**: Include a "Terminal Weathering Correctness" section in the review output, after the normal NBS review dimensions.
+→ **Dispatch**: Read `{{NBS_ROOT}}/commands/nbs-terminal-weathering-review.md` and apply it. This provides terminal-weathering-specific correctness checks **in addition to** the normal NBS review below.
 
 ---
 
