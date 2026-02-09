@@ -43,6 +43,31 @@ Dispatch based on results:
 
 A new terminal weathering session. No state exists yet.
 
+**CRITICAL — RUST IS MANDATORY. READ THIS BEFORE ANYTHING ELSE.**
+
+Terminal weathering converts Python to **Rust via PyO3**. Not C. Not C++. Not ctypes. Not cffi wrapping C. Not Cython. **RUST + PyO3. NOTHING ELSE.**
+
+Before proceeding past this phase, you MUST verify:
+
+```bash
+# All three must succeed or you HARD STOP
+rustc --version    # Rust compiler available
+cargo --version    # Cargo build system available
+pip show maturin   # Or: maturin --version (PyO3 build tool)
+```
+
+If ANY of these checks fail: **STOP. DO NOT PROCEED. DO NOT FALL BACK TO C.** Tell the human that Rust tooling must be installed first and provide installation instructions:
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install maturin (PyO3 build tool)
+pip install maturin
+```
+
+**WHY NOT C?** C does not provide the safety guarantees that make unsupervised conversion viable. Memory safety bugs in converted C code are silent, catastrophic, and invisible to the evidence gate. Rust's borrow checker catches these at compile time. The entire trust gradient (Tight → Gate → Batch → Review) depends on the compiler catching what tests miss. Without Rust, you cannot safely advance past Tight. Terminal weathering with C is not terminal weathering — it is gambling.
+
 **What to do:**
 
 1. **Ask the human** for the terminal goal. Not "rewrite in Rust" — that is instrumental. The terminal goal is a measurable system improvement:
@@ -459,6 +484,7 @@ This enables parallel workers on different leaves without conflicts. Each worker
 
 ## Rules
 
+- **RUST ONLY. NO C. NO EXCEPTIONS.** All conversions use Rust via PyO3/maturin. If Rust tooling is not available, hard abort. Do not collapse to C, ctypes, cffi, or Cython under any circumstances.
 - **Evidence over authority.** "Rust is faster" is Ethos. "This function runs in 3ms instead of 12ms under production load" is Logos. Only the second is acceptable.
 - **Leaf-first, always.** Never convert a function with unconverted Python dependencies. Decompose or wait.
 - **The Python layer remains until proven redundant.** Overlay, do not replace, until evidence confirms the conversion.
