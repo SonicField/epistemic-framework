@@ -65,7 +65,7 @@ Ask the user:
 
 Evidence: You performed Phases 1-4 (Establish Context, Archaeology, Triage, Gap Analysis) and produced a discovery report.
 
-→ **Dispatch**: Read `~/.claude/commands/nbs-discovery-verify.md` and apply it instead of continuing here. That command verifies discovery report completeness before recovery.
+→ **Dispatch**: Read `{{NBS_ROOT}}/claude_tools/nbs-discovery-verify.md` and apply it instead of continuing here. That command verifies discovery report completeness before recovery.
 
 ### If you executed `/nbs-recovery` this session
 
@@ -81,7 +81,7 @@ Evidence: You read a discovery report and created or executed a recovery plan.
 
 If branch starts with `weathering/` or `.nbs/terminal-weathering/` exists:
 
-→ **Dispatch**: Read `{{NBS_ROOT}}/commands/nbs-terminal-weathering-review.md` and apply it. This provides terminal-weathering-specific correctness checks **in addition to** the normal NBS review below.
+→ **Dispatch**: Read `{{NBS_ROOT}}/claude_tools/nbs-terminal-weathering-review.md` and apply it. This provides terminal-weathering-specific correctness checks **in addition to** the normal NBS review below.
 
 ---
 
