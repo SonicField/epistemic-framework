@@ -220,12 +220,25 @@ Execute the verification cycle on the selected candidate. Behaviour depends on t
 
 Confirm every step with the human before proceeding.
 
-1. **Design**: Rust implementation matching the Python API exactly (PyO3/cffi). Present design to human.
-2. **Plan**: Identify what could go wrong — semantics drift, edge cases, GIL interactions. Present plan to human.
+1. **Design**: Rust implementation matching the Python API exactly (PyO3/cffi). Present design to human. Specify the **overlay mechanism** — how do both implementations coexist? (conditional delegation, feature flag, dual implementation with switch).
+2. **Plan**: Work through the **mandatory correctness checklist** (see below). Present plan to human.
 3. **Deconstruct**: Break into testable steps. Present breakdown to human.
-4. **Test**: Write tests exercising the Python API through the Rust backend. Write benchmarks. Show tests to human.
+4. **Test**: Write tests exercising the Python API through the Rust backend. **Run the entire existing test suite against both implementations.** Write benchmarks. Show tests to human.
 5. **Code**: Implement Rust. The Python layer remains until proven redundant. Show code to human.
 6. **Document**: Record measurements in the conversion record. Show measurements to human.
+
+#### Mandatory Correctness Checklist (Phase 4, Plan)
+
+Before writing any code, enumerate risks in these categories. This is not optional — "identify what could go wrong" is too abstract without it.
+
+| Category | What to check |
+|----------|--------------|
+| **Shared types** | Which types cross the conversion boundary? If the target shares types with unconverted code, those types must remain compatible across both implementations |
+| **Reference semantics** | Does the Python code use reference/pointer indirection (e.g., objects wrapping mutable references)? These pass basic tests but break subtly under aliasing |
+| **Type identity** | Does any code use `isinstance`, `type()`, or class identity checks against the target? Rust-backed objects may fail these |
+| **Overlay mechanism** | How will both implementations coexist? Define the switch: conditional import, feature flag, adapter, or wrapper |
+| **Canary tests** | Which existing tests exercise the conversion target most aggressively? Identify these before conversion — they are the primary regression gate |
+| **Existing test suite** | The full existing test suite must pass against both the Python and Rust implementations. Not just new tests — all existing tests |
 
 ### Trust Level: Gate
 
@@ -254,13 +267,20 @@ The evidence gate. This is where conversions live or die.
 
 **What to do:**
 
-1. **Collect evidence:**
+1. **Correctness gate (must pass before performance is considered):**
+   - Full existing test suite passes against the Rust implementation
+   - Canary tests identified in Phase 4 pass
+   - Shared-type compatibility verified across conversion boundary
+   - Reference semantics behave identically (aliasing, mutation visibility)
+   - Type identity checks (`isinstance`, `type()`) pass
+   - If the correctness gate fails, verdict is **falsified** regardless of performance
+
+2. **Collect performance evidence:**
    - Post-conversion benchmarks (same conditions as baseline)
-   - Test results (all existing tests pass, new tests pass)
    - Memory measurements
    - Edge case coverage
 
-2. **Compare against baseline.** Use statistical methods where appropriate — single-run comparisons are insufficient.
+3. **Compare against baseline.** Use statistical methods where appropriate — single-run comparisons are insufficient.
 
 3. **Determine verdict.** Three outcomes, no others:
 
