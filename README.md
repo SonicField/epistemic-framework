@@ -88,10 +88,11 @@ Run this when you want to test a hypothesis before committing to a direction. Cr
 
 ### Terminal Weathering
 
-Progressive Python-to-Rust conversion using NBS principles. The name reflects both the tooling (terminal-based) and the process (weathering produces rust on iron, working from the surface inward).
+Progressive replacement of CPython call protocol paths with C type slot implementations, using NBS principles. Evidence from initial Rust/PyO3 work showed that function body replacement leaves CPython's dispatch overhead intact — the performance-critical layer is the call protocol, which requires direct C access to type slots. The methodology (evidence gates, falsifiability, progressive replacement) is unchanged; the unit of work shifted from function bodies to type slots, and the implementation language from Rust to C against CPython's type API, with ASan, leak analysis, and refcount verification as mandatory correctness gates.
 
 - [Terminal Weathering Documentation](terminal-weathering/docs/) - Theory, getting started, methodology
 - [Concept](terminal-weathering/concepts/terminal-weathering.md) - The philosophy and phases
+- [Evidence](terminal-weathering/evidence/) - Measured data supporting the Rust-to-C pivot
 - [/nbs-terminal-weathering](claude_tools/nbs-terminal-weathering.md) - The tool command
 
 ## Testing
