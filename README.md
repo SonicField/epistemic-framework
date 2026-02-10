@@ -101,7 +101,8 @@ The framework includes automated tests using a novel AI-evaluates-AI approach.
 
 - [Testing Strategy](docs/testing-strategy.md) - Philosophy, adversarial testing, test isolation
 - [Interactive Testing](docs/interactive-testing.md) - Using pty-session for multi-turn tests
-- [pty-session Reference](docs/pty-session.md) - Interactive terminal session manager
+- [pty-session Reference](docs/pty-session.md) - Interactive terminal session manager (REPLs, debuggers)
+- [nbs-worker Reference](docs/nbs-worker.md) - Worker lifecycle management (spawn, monitor, search, dismiss)
 
 See [tests/README.md](tests/README.md) for running tests.
 

@@ -67,20 +67,20 @@ If they need help with terminal goals, explain:
 ### Spawning workers
 
 **Brief answer:**
-> "Workers are separate Claude instances you spawn with pty-session. You create a task file, then spawn the worker pointing at it."
+> "Workers are separate Claude instances you spawn with `nbs-worker`. It handles naming, task files, persistent logging, and Claude startup in a single command."
 
 **Walk through:**
-1. Create task file in `.nbs/workers/worker-<name>.md`
-2. Spawn with:
+1. Spawn with a single command:
    ```bash
-   pty-session create worker-name 'cd /your/project && claude'
-   pty-session send worker-name 'Read .nbs/workers/worker-name.md and execute the task.'
+   WORKER=$(nbs-worker spawn my-task /your/project "Describe what the worker should do.")
+   echo "Spawned: $WORKER"  # e.g., my-task-a3f1
    ```
-3. Monitor with: `pty-session read worker-name`
-4. When done: `pty-session kill worker-name`
+2. Monitor with: `nbs-worker status $WORKER` or `nbs-worker search $WORKER "pattern"`
+3. Read results: `nbs-worker results $WORKER`
+4. When done: `nbs-worker dismiss $WORKER`
 
 **Check understanding:**
-> "Have you used pty-session before, or do you need help with that first?"
+> "Have you used nbs-worker before, or do you need help with the commands?"
 
 If they have an active project, reference it:
 > "I see you're working on [terminal goal]. What's the first task you want to delegate?"
@@ -158,12 +158,13 @@ Worker: Implement the parser. Pass all 84 tests.
 ### Monitoring workers
 
 **Brief answer:**
-> "Use `pty-session read worker-name` to see output. Check the worker's task file - they update Status and Log when done."
+> "Use `nbs-worker status <name>` for status, `nbs-worker search <name> <pattern>` to search logs, and `nbs-worker results <name>` to read completed findings. Check the worker's task file for the Log section."
 
 **Practical notes:**
 - Don't check constantly - workers need time to work
-- Look for escalations in the Log section
-- When Status shows `completed`, read their findings
+- Use `nbs-worker search <name> "ERROR|FAIL"` to check for problems
+- When status shows `completed`, read their findings with `nbs-worker results`
+- Persistent logs survive session exit — no more lost output
 
 **Check understanding:**
 > "Are you monitoring a specific worker right now, or preparing for future work?"

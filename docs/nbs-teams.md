@@ -26,7 +26,7 @@ Supervisor (you or Claude)
 The supervisor:
 - Maintains terminal goal clarity
 - Decomposes work into worker tasks
-- Spawns workers (via pty-session)
+- Spawns workers (via nbs-worker)
 - Captures learnings after each worker (3Ws)
 - Runs self-check every 3 workers
 
@@ -56,10 +56,11 @@ If you're writing implementation steps, scope is too narrow. Set the goal, let w
 
 ```
 .nbs/
-├── supervisor.md       # Terminal goal, progress, 3Ws log
-├── decisions.log       # Append-only decision record
+├── supervisor.md        # Terminal goal, progress, 3Ws log
+├── decisions.log        # Append-only decision record
 └── workers/
-    ├── worker-001.md   # Task files
+    ├── parser-a3f1.md   # Task file (created by nbs-worker spawn)
+    ├── parser-a3f1.log  # Persistent session output
     └── ...
 ```
 
@@ -71,6 +72,7 @@ If you're writing implementation steps, scope is too narrow. Set the goal, let w
 | `/nbs-teams-help` | Interactive guidance - ask Claude for help |
 | `/nbs-teams-supervisor` | Supervisor role reference |
 | `/nbs-teams-worker` | Worker role reference |
+| `/nbs-tmux-worker` | nbs-worker command reference |
 
 ### Getting Help
 
@@ -89,7 +91,7 @@ Claude walks you through interactively, using your actual project for examples i
 1. Run `/nbs-teams-start`
 2. Answer the terminal goal question
 3. Decompose into worker tasks
-4. Spawn workers with pty-session
+4. Spawn workers with `nbs-worker spawn`
 5. Capture 3Ws after each completes
 
 ## 3Ws
@@ -121,5 +123,5 @@ Don't use when:
 
 ## See Also
 
-- [pty-session](pty-session.md) - How to spawn workers
+- [nbs-worker](nbs-worker.md) - Worker lifecycle management (spawn, monitor, search, dismiss)
 - [Why NBS](Why-NBS.md) - The philosophy behind the framework

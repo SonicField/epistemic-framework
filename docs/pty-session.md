@@ -153,20 +153,6 @@ pty-session kill pyrepl
 pty-session read pyrepl
 ```
 
-## Example: Worker with Blocking Read
-
-```bash
-# Spawn worker
-pty-session create worker 'python3 long_running_task.py'
-
-# Do other work...
-
-# Block until worker finishes, then read output
-pty-session read worker --wait
-
-# Cache is now consumed
-```
-
 ## Session Exit Behaviour
 
 **Killed sessions:**

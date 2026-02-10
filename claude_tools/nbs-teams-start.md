@@ -135,8 +135,8 @@ You are now the supervisor. Your terminal goal is recorded.
 Next steps:
 1. Read claude_tools/nbs-teams-supervisor.md to understand your role
 2. Decompose your goal into worker tasks
-3. Create worker task files in .nbs/workers/
-4. Spawn workers and capture learnings
+3. Spawn workers with nbs-worker (see /nbs-tmux-worker for reference)
+4. Capture learnings after each worker completes
 
 Run /nbs-teams-help if you need guidance on any of these.
 ```
@@ -157,7 +157,7 @@ Run /nbs-teams-help if you need guidance on any of these.
 The user is now the supervisor. They should:
 1. Read `nbs-teams-supervisor.md` to understand their role
 2. Decompose work into worker tasks
-3. Use pty-session to spawn worker Claudes
+3. Use `nbs-worker spawn` to create and start worker Claudes
 4. Capture 3Ws after each worker completes
 
 If they need help, they run `/nbs-teams-help`.

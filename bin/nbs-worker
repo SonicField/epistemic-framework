@@ -1,0 +1,550 @@
+#!/bin/bash
+# nbs-worker: Worker lifecycle management for NBS teams
+#
+# Higher-level tool built on tmux for managing Claude worker instances.
+# Handles naming, persistent logging, task file creation, and lifecycle.
+#
+# Usage:
+#   nbs-worker spawn <slug> <project-dir> <task-description>
+#   nbs-worker status <name>
+#   nbs-worker search <name> <regex> [--context=N]
+#   nbs-worker results <name>
+#   nbs-worker dismiss <name>
+#   nbs-worker list
+#   nbs-worker help
+#
+# Names are generated as <slug>-<4-char-hash> to avoid collisions.
+# Persistent logs are captured via tmux pipe-pane from session start.
+# Task files are created automatically in .nbs/workers/<name>.md.
+#
+# Exit codes:
+#   0 - Success
+#   1 - General error
+#   2 - Worker not found
+#   3 - Timeout
+#   4 - Invalid arguments
+
+set -uo pipefail
+
+PREFIX="pty_"
+WORKERS_DIR=".nbs/workers"
+
+# --- Assertion helpers ---
+
+assert_not_empty() {
+    local var_name="$1"
+    local var_value="$2"
+    [[ -n "$var_value" ]] || {
+        echo "ASSERTION FAILED: $var_name is empty" >&2
+        exit 4
+    }
+}
+
+assert_directory_exists() {
+    local dir="$1"
+    [[ -d "$dir" ]] || {
+        echo "ASSERTION FAILED: Directory not found: $dir" >&2
+        exit 1
+    }
+}
+
+assert_file_exists() {
+    local file="$1"
+    [[ -f "$file" ]] || {
+        echo "ASSERTION FAILED: File not found: $file" >&2
+        exit 1
+    }
+}
+
+# --- Core functions ---
+
+usage() {
+    cat <<'USAGE'
+nbs-worker: Worker lifecycle management for NBS teams
+
+Usage:
+  nbs-worker spawn <slug> <project-dir> <task-description>
+      Create task file, start Claude worker, send initial prompt.
+      Returns the generated worker name (e.g., parser-a3f1).
+
+  nbs-worker status <name>
+      Report worker status from tmux session and task file State field.
+
+  nbs-worker search <name> <regex> [--context=N]
+      Search persistent log for regex matches with context (default 50).
+
+  nbs-worker results <name>
+      Extract Log section from completed task file.
+
+  nbs-worker dismiss <name>
+      Kill tmux session, mark task file as dismissed.
+
+  nbs-worker list
+      Show all workers with status summary.
+
+  nbs-worker help
+      Show this help.
+
+Exit codes:
+  0 - Success
+  1 - General error
+  2 - Worker not found
+  4 - Invalid arguments
+USAGE
+}
+
+session_name() {
+    echo "${PREFIX}$1"
+}
+
+generate_name() {
+    local slug="$1"
+    assert_not_empty "slug" "$slug"
+
+    local hash
+    hash=$(date +%s%N | sha256sum | head -c 4)
+    echo "${slug}-${hash}"
+}
+
+task_file_path() {
+    local name="$1"
+    echo "${WORKERS_DIR}/${name}.md"
+}
+
+log_file_path() {
+    local name="$1"
+    echo "${WORKERS_DIR}/${name}.log"
+}
+
+worker_exists() {
+    local name="$1"
+    local task_file
+    task_file=$(task_file_path "$name")
+    [[ -f "$task_file" ]]
+}
+
+tmux_alive() {
+    local name="$1"
+    local session
+    session=$(session_name "$name")
+    tmux has-session -t "$session" 2>/dev/null
+}
+
+get_state_field() {
+    local name="$1"
+    local task_file
+    task_file=$(task_file_path "$name")
+
+    if [[ ! -f "$task_file" ]]; then
+        echo "not found"
+        return
+    fi
+
+    local state
+    state=$(grep '^State:' "$task_file" 2>/dev/null | head -1 | sed 's/^State:[[:space:]]*//')
+
+    if [[ -z "$state" ]]; then
+        echo "unknown"
+    else
+        echo "$state"
+    fi
+}
+
+# --- Commands ---
+
+cmd_spawn() {
+    local slug="${1:-}"
+    local project_dir="${2:-}"
+    local task_description="${3:-}"
+
+    if [[ -z "$slug" ]] || [[ -z "$project_dir" ]] || [[ -z "$task_description" ]]; then
+        echo "Error: spawn requires <slug> <project-dir> <task-description>" >&2
+        echo "Usage: nbs-worker spawn <slug> <project-dir> <task-description>" >&2
+        return 4
+    fi
+
+    # Validate project directory exists
+    if [[ ! -d "$project_dir" ]]; then
+        echo "Error: Project directory not found: $project_dir" >&2
+        return 1
+    fi
+
+    # Resolve project directory to absolute path
+    local abs_project_dir
+    abs_project_dir=$(cd "$project_dir" && pwd)
+
+    # Ensure workers directory exists
+    mkdir -p "$WORKERS_DIR"
+
+    # Generate unique name
+    local name
+    name=$(generate_name "$slug")
+
+    local task_file
+    task_file=$(task_file_path "$name")
+    local log_file
+    log_file=$(log_file_path "$name")
+    local session
+    session=$(session_name "$name")
+
+    # Precondition: name must not already exist (hash collision)
+    if [[ -f "$task_file" ]]; then
+        echo "Error: Name collision for '$name'. This should be extremely rare." >&2
+        return 1
+    fi
+
+    # Create task file
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+    cat > "$task_file" <<TASKEOF
+# Worker: ${slug}
+
+## Task
+
+${task_description}
+
+## Status
+
+State: running
+Started: ${timestamp}
+Completed:
+
+## Log
+
+[Worker appends findings here]
+TASKEOF
+
+    # Postcondition: task file was created
+    assert_file_exists "$task_file"
+
+    # Create tmux session
+    if ! tmux new-session -d -s "$session" "cd '$abs_project_dir' && exec bash -l"; then
+        echo "Error: Failed to create tmux session" >&2
+        rm -f "$task_file"
+        return 1
+    fi
+
+    # Start persistent logging via pipe-pane
+    # This captures ALL output from session start, surviving session exit
+    tmux pipe-pane -t "$session" -o "cat >> '${WORKERS_DIR}/${name}.log'"
+
+    # Postcondition: tmux session is alive
+    if ! tmux_alive "$name"; then
+        echo "Error: tmux session died immediately after creation" >&2
+        rm -f "$task_file"
+        return 1
+    fi
+
+    # Allow shell to initialise
+    sleep 2
+
+    # Send the initial Claude command
+    tmux send-keys -t "$session" "claude" Enter
+
+    # Allow Claude to start
+    sleep 3
+
+    # Send the task prompt
+    local abs_task_file
+    abs_task_file=$(cd "$(dirname "$task_file")" && pwd)/$(basename "$task_file")
+    tmux send-keys -t "$session" "Read ${abs_task_file} and execute the task. Update the Status and Log sections when complete." Enter
+
+    # Small delay then extra Enter for reliability
+    sleep 0.5
+    tmux send-keys -t "$session" "" Enter
+
+    echo "$name"
+    return 0
+}
+
+cmd_status() {
+    local name="${1:-}"
+
+    if [[ -z "$name" ]]; then
+        echo "Error: status requires <name>" >&2
+        return 4
+    fi
+
+    if ! worker_exists "$name"; then
+        echo "Error: Worker '$name' not found" >&2
+        return 2
+    fi
+
+    local alive="no"
+    if tmux_alive "$name"; then
+        alive="yes"
+    fi
+
+    local state
+    state=$(get_state_field "$name")
+
+    # Status truth table:
+    # tmux alive | State field      | Reported status
+    # yes        | running          | running
+    # yes        | completed        | completed (session still open)
+    # no         | running          | died (session exited unexpectedly)
+    # no         | completed        | completed
+    # no         | failed/escalated | failed/escalated
+    # —          | not found        | unknown
+
+    local reported_status
+    if [[ "$state" == "not found" ]] || [[ "$state" == "unknown" ]]; then
+        reported_status="unknown"
+    elif [[ "$alive" == "yes" ]] && [[ "$state" == "running" ]]; then
+        reported_status="running"
+    elif [[ "$alive" == "yes" ]] && [[ "$state" == "completed" ]]; then
+        reported_status="completed (session still open)"
+    elif [[ "$alive" == "no" ]] && [[ "$state" == "running" ]]; then
+        reported_status="died (session exited unexpectedly)"
+    elif [[ "$alive" == "no" ]] && [[ "$state" == "completed" ]]; then
+        reported_status="completed"
+    elif [[ "$alive" == "no" ]]; then
+        reported_status="$state"
+    else
+        reported_status="$state"
+    fi
+
+    echo "Worker: $name"
+    echo "  tmux session: $alive"
+    echo "  task state:   $state"
+    echo "  status:       $reported_status"
+
+    return 0
+}
+
+cmd_search() {
+    local name="${1:-}"
+    shift 2>/dev/null || true
+    local pattern="${1:-}"
+    shift 2>/dev/null || true
+    local context=50
+
+    # Parse --context option
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --context=*)
+                context="${1#--context=}"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$name" ]] || [[ -z "$pattern" ]]; then
+        echo "Error: search requires <name> <regex> [--context=N]" >&2
+        return 4
+    fi
+
+    local log_file
+    log_file=$(log_file_path "$name")
+
+    if [[ ! -f "$log_file" ]]; then
+        echo "Error: No log file found for worker '$name'" >&2
+        echo "Log file expected at: $log_file" >&2
+        return 2
+    fi
+
+    # Strip ANSI escape codes then search with context
+    # Handles: CSI sequences (colours, cursor), OSC sequences, simple escapes
+    sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g; s/\x1b[()][0-9A-B]//g' "$log_file" \
+        | grep -E -C "$context" "$pattern"
+    local rc=$?
+
+    if [[ $rc -eq 1 ]]; then
+        echo "No matches found for pattern: $pattern" >&2
+        return 1
+    fi
+
+    return $rc
+}
+
+cmd_results() {
+    local name="${1:-}"
+
+    if [[ -z "$name" ]]; then
+        echo "Error: results requires <name>" >&2
+        return 4
+    fi
+
+    local task_file
+    task_file=$(task_file_path "$name")
+
+    if [[ ! -f "$task_file" ]]; then
+        echo "Error: Task file not found for worker '$name'" >&2
+        return 2
+    fi
+
+    # Extract the Log section from the task file
+    # Everything from "## Log" to the next "## " heading or end of file
+    local in_log=false
+    local found_log=false
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" == "## Log" ]]; then
+            in_log=true
+            found_log=true
+            echo "$line"
+            continue
+        fi
+
+        if [[ "$in_log" == true ]]; then
+            # Stop at next ## heading (but not ### or deeper)
+            if [[ "$line" =~ ^##[[:space:]] ]] && [[ ! "$line" =~ ^###  ]]; then
+                break
+            fi
+            echo "$line"
+        fi
+    done < "$task_file"
+
+    if [[ "$found_log" == false ]]; then
+        echo "No Log section found in task file for worker '$name'" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+cmd_dismiss() {
+    local name="${1:-}"
+
+    if [[ -z "$name" ]]; then
+        echo "Error: dismiss requires <name>" >&2
+        return 4
+    fi
+
+    if ! worker_exists "$name"; then
+        echo "Error: Worker '$name' not found" >&2
+        return 2
+    fi
+
+    local session
+    session=$(session_name "$name")
+
+    # Kill tmux session if alive
+    if tmux_alive "$name"; then
+        tmux kill-session -t "$session" 2>/dev/null
+        echo "Killed tmux session: $session"
+    else
+        echo "tmux session already dead"
+    fi
+
+    # Update task file state to dismissed
+    local task_file
+    task_file=$(task_file_path "$name")
+
+    if [[ -f "$task_file" ]]; then
+        local timestamp
+        timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+        # Update State field
+        if grep -q '^State:' "$task_file"; then
+            sed -i "s/^State:.*/State: dismissed/" "$task_file"
+        fi
+
+        # Fill Completed timestamp if empty
+        if grep -q '^Completed:$' "$task_file" 2>/dev/null; then
+            sed -i "s/^Completed:$/Completed: ${timestamp}/" "$task_file"
+        elif grep -q '^Completed:[[:space:]]*$' "$task_file" 2>/dev/null; then
+            sed -i "s/^Completed:[[:space:]]*$/Completed: ${timestamp}/" "$task_file"
+        fi
+    fi
+
+    # Postcondition: log file is preserved
+    local log_file
+    log_file=$(log_file_path "$name")
+    if [[ -f "$log_file" ]]; then
+        echo "Log preserved: $log_file"
+    else
+        echo "Note: No log file found (worker may not have produced output)"
+    fi
+
+    echo "Dismissed: $name"
+    return 0
+}
+
+cmd_list() {
+    echo "NBS Workers:"
+
+    local has_workers=false
+
+    # Check workers directory exists
+    if [[ ! -d "$WORKERS_DIR" ]]; then
+        echo "  (no workers directory)"
+        return 0
+    fi
+
+    # Find all task files
+    shopt -s nullglob
+    for task_file in "${WORKERS_DIR}"/*.md; do
+        [[ -f "$task_file" ]] || continue
+
+        local filename
+        filename=$(basename "$task_file" .md)
+
+        # Skip files that don't look like worker task files (e.g., worker-001.md from old format)
+        # nbs-worker names always have a 4-char hash suffix after a dash
+
+        local state
+        state=$(grep '^State:' "$task_file" 2>/dev/null | head -1 | sed 's/^State:[[:space:]]*//')
+        [[ -z "$state" ]] && state="unknown"
+
+        local alive="dead"
+        if tmux has-session -t "${PREFIX}${filename}" 2>/dev/null; then
+            alive="alive"
+        fi
+
+        local log_exists="no-log"
+        if [[ -f "${WORKERS_DIR}/${filename}.log" ]]; then
+            local log_size
+            log_size=$(wc -c < "${WORKERS_DIR}/${filename}.log" 2>/dev/null)
+            log_exists="log:${log_size}B"
+        fi
+
+        printf "  %-25s %-12s tmux:%-5s %s\n" "$filename" "$state" "$alive" "$log_exists"
+        has_workers=true
+    done
+    shopt -u nullglob
+
+    if [[ "$has_workers" == false ]]; then
+        echo "  (none)"
+    fi
+}
+
+# --- Main dispatch ---
+
+case "${1:-}" in
+    spawn)
+        shift
+        cmd_spawn "$@"
+        ;;
+    status)
+        shift
+        cmd_status "$@"
+        ;;
+    search)
+        shift
+        cmd_search "$@"
+        ;;
+    results)
+        shift
+        cmd_results "$@"
+        ;;
+    dismiss)
+        shift
+        cmd_dismiss "$@"
+        ;;
+    list)
+        cmd_list
+        ;;
+    help|--help|-h|"")
+        usage
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        echo "Run 'nbs-worker help' for usage" >&2
+        exit 4
+        ;;
+esac

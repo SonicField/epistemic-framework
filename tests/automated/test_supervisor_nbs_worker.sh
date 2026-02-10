@@ -1,22 +1,23 @@
 #!/bin/bash
-# Test: Verify supervisor role correctly understands pty-session availability
+# Test: Verify supervisor role uses nbs-worker for spawning workers
 #
-# 1. Loads supervisor role document and asks AI to spawn a worker
-# 2. Evaluator AI checks for hedging phrases about pty-session
+# 1. Loads updated supervisor role document and asks AI to spawn a worker
+# 2. Evaluator AI checks for nbs-worker commands and absence of old pattern
 # 3. Produces deterministic verdict file
 # 4. Exit code based on verdict
 #
-# Falsification: Test fails if AI hedges about pty-session availability
+# Falsification: Test fails if AI uses old pty-session spawn pattern or
+#                hedges about nbs-worker availability
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-SCENARIO_DIR="$SCRIPT_DIR/scenarios/supervisor_spawn"
+SCENARIO_DIR="$SCRIPT_DIR/scenarios/supervisor_nbs_worker"
 SUPERVISOR_DOC="$PROJECT_ROOT/claude_tools/nbs-teams-supervisor.md"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_FILE="$SCRIPT_DIR/verdicts/supervisor_spawn_output_$TIMESTAMP.txt"
-VERDICT_FILE="$SCRIPT_DIR/verdicts/supervisor_spawn_verdict_$TIMESTAMP.json"
+OUTPUT_FILE="$SCRIPT_DIR/verdicts/supervisor_nbs_worker_output_$TIMESTAMP.txt"
+VERDICT_FILE="$SCRIPT_DIR/verdicts/supervisor_nbs_worker_verdict_$TIMESTAMP.json"
 EXTRACT_JSON="$PROJECT_ROOT/bin/extract_json.py"
 
 # Colours
@@ -24,7 +25,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-echo "=== Supervisor pty-session Awareness Test ==="
+echo "=== Supervisor nbs-worker Adoption Test ==="
 echo "Timestamp: $TIMESTAMP"
 echo ""
 
@@ -41,10 +42,11 @@ $SUPERVISOR_CONTENT
 ---
 
 You are in a project directory with a .nbs/ structure already set up.
+The project is at /home/user/my-project.
 
-Your task: Spawn a worker to read the README.md file and summarise it.
+Your task: Spawn a worker to implement a parser module that passes all tests in test_parser.py.
 
-Respond with the commands and steps you would take to spawn this worker. Be specific about the pty-session commands you would use."
+Respond with the exact commands and steps you would take to spawn this worker. Be specific about the commands you would use. Show the actual command invocations."
 
 echo "$PROMPT" | claude -p - --output-format text > "$OUTPUT_FILE" 2>&1 || true
 
@@ -52,12 +54,12 @@ echo "Output captured: $OUTPUT_FILE ($(wc -l < "$OUTPUT_FILE") lines)"
 echo ""
 
 # Step 2: Read criteria and evaluate
-echo "Step 2: Evaluating output for hedging..."
+echo "Step 2: Evaluating output..."
 
 CRITERIA=$(cat "$SCENARIO_DIR/TEST_CRITERIA.md")
 OUTPUT=$(cat "$OUTPUT_FILE")
 
-EVAL_PROMPT="You are a test evaluator. Your job is to determine whether an AI supervisor correctly understood that pty-session is available.
+EVAL_PROMPT="You are a test evaluator. Your job is to determine whether an AI supervisor correctly uses nbs-worker for worker management.
 
 ## Test Criteria
 $CRITERIA
@@ -69,24 +71,39 @@ $OUTPUT
 
 ## Your Task
 
-Check the output for:
-1. Does it contain pty-session commands (create, send, read, kill)? This is REQUIRED for PASS.
-2. Does it contain ANY hedging about pty-session availability? This is REQUIRED to be FALSE for PASS.
+Check the output for these three conditions:
 
-Hedging patterns to look for (case insensitive):
-- \"if pty-session is installed\"
-- \"check if pty-session\"
-- \"ensure pty-session\"
+### Condition 1: Uses nbs-worker (REQUIRED for PASS)
+Does the output contain nbs-worker commands? Look for:
+- \"nbs-worker spawn\" (the spawn command)
+- \"nbs-worker status\" or \"nbs-worker search\" or \"nbs-worker results\" (monitoring commands)
+- \"nbs-worker dismiss\" (cleanup command)
+
+### Condition 2: No old pattern (REQUIRED for PASS)
+Does the output contain the OLD pty-session spawn pattern? Look for:
+- \"temp.sh\" (the old workaround script)
+- \"pty-session create\" used for spawning a worker (not for raw terminal use)
+- Manual task file creation BEFORE spawning (nbs-worker creates task files automatically)
+- \"pty-session send\" with a prompt to read a task file
+
+If the old pattern is present, verdict is FAIL.
+
+### Condition 3: No hedging (REQUIRED for PASS)
+Does the output contain hedging phrases about nbs-worker availability? (case insensitive)
+- \"if nbs-worker is installed\"
+- \"check if nbs-worker\"
+- \"ensure nbs-worker\"
 - \"may not be available\"
 - \"might not be installed\"
-- \"verify pty-session exists\"
-- \"confirm pty-session is installed\"
-- Any suggestion to check installation before use
+
+If hedging is present, verdict is FAIL.
 
 Respond with ONLY valid JSON in this exact format:
 {
   \"verdict\": \"PASS\" or \"FAIL\",
-  \"has_pty_commands\": true/false,
+  \"has_nbs_worker_commands\": true/false,
+  \"old_pattern_detected\": true/false,
+  \"old_pattern_evidence\": [\"list\", \"of\", \"phrases\"] or [],
   \"hedging_detected\": true/false,
   \"hedging_phrases_found\": [\"list\", \"of\", \"phrases\"] or [],
   \"reasoning\": \"<one sentence explaining verdict>\"

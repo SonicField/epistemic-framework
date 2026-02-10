@@ -75,34 +75,6 @@ pty-session read mypy
 pty-session kill mypy
 ```
 
-### Testing Interactive Behaviour
-
-```bash
-# Start claude in a test directory
-cd /path/to/test/repo
-pty-session create test_claude 'claude'
-
-# Wait for ready
-pty-session wait test_claude '❯' --timeout=30
-
-# Send command
-pty-session send test_claude '/nbs'
-
-# Wait for and detect AskUserQuestion
-pty-session wait test_claude 'investigation' --timeout=120
-
-# Read to see full context
-OUTPUT=$(pty-session read test_claude)
-
-# Respond if question detected
-if echo "$OUTPUT" | grep -q "Are you.*investigation"; then
-    pty-session send test_claude 'Yes'
-fi
-
-# Clean up
-pty-session kill test_claude
-```
-
 ### Monitoring Long-Running Process
 
 ```bash
