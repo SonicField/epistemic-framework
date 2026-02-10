@@ -9,9 +9,9 @@
 # Usage:
 #   pty-session create <name> <command>   Create session running command
 #   pty-session send <name> <text>        Send keystrokes (adds Enter by default)
-#   pty-session read <name>               Capture current screen content
+#   pty-session read <name>               Read session output (live, cache, or log)
 #   pty-session wait <name> <pattern>     Poll until pattern appears (default 60s)
-#   pty-session kill <name>               Terminate session (output cached)
+#   pty-session kill <name>               Terminate session (screen cached)
 #   pty-session list                      Show active and killed pty-session sessions
 #   pty-session help                      Show this help
 #
@@ -39,6 +39,17 @@ set -uo pipefail
 
 PREFIX="pty_"
 CACHE_DIR="${HOME}/.pty-session/cache"
+LOG_DIR="${HOME}/.pty-session/logs"
+
+# Output capture has two layers:
+#
+#   Log  (persistent) — tmux pipe-pane streams all output to LOG_DIR/<name>.log
+#                        from the moment of creation. Survives any exit.
+#
+#   Cache (snapshot)  — tmux capture-pane grabs the last 100 screen lines into
+#                        CACHE_DIR/<name>.output at kill time. Consumed on read.
+#
+# `read` resolves output as: live pane → cache → persistent log.
 
 usage() {
     grep '^#' "$0" | grep -v '!/bin/bash' | cut -c3-
@@ -115,6 +126,10 @@ cmd_create() {
     local rc=$?
 
     if [[ $rc -eq 0 ]]; then
+        # Persistent logging — stream all output to a log file
+        mkdir -p "$LOG_DIR" 2>/dev/null
+        local log_file="${LOG_DIR}/${name}.log"
+        tmux pipe-pane -t "$session" -o "cat >> '${log_file}'"
         echo "Created session: $name"
     fi
     return $rc
@@ -212,10 +227,18 @@ cmd_read() {
         # Session has exited, read from cache
         if read_cache "$name"; then
             return 0
-        else
-            echo "Error: Session exited but cache not found" >&2
-            return 2
         fi
+
+        # Cache miss — try persistent log file
+        local log_file="${LOG_DIR}/${name}.log"
+        if [[ -f "$log_file" ]]; then
+            echo "(from persistent log)" >&2
+            sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g; s/\x1b[()][0-9A-B]//g' "$log_file"
+            return 0
+        fi
+
+        echo "Error: Session exited but no output found (no cache or log)" >&2
+        return 2
     fi
 
     # Non-wait mode: try live session first, then cache
@@ -227,6 +250,15 @@ cmd_read() {
 
     # Session not running, try cache
     if read_cache "$name"; then
+        return 0
+    fi
+
+    # Cache miss — try persistent log file
+    local log_file="${LOG_DIR}/${name}.log"
+    if [[ -f "$log_file" ]]; then
+        echo "(from persistent log)" >&2
+        # Strip ANSI escape codes for readability
+        sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g; s/\x1b[()][0-9A-B]//g' "$log_file"
         return 0
     fi
 
@@ -320,14 +352,40 @@ cmd_list() {
     fi
 
     # List killed sessions (from cache)
+    local seen_names=()
     if [[ -d "$CACHE_DIR" ]]; then
         shopt -s nullglob
         for cache_file in "${CACHE_DIR}"/*.output; do
             if [[ -f "$cache_file" ]]; then
                 local name
                 name=$(basename "$cache_file" .output)
-                printf "  %-20s killed\n" "$name"
+                printf "  %-20s killed (cached)\n" "$name"
+                seen_names+=("$name")
                 has_sessions=true
+            fi
+        done
+        shopt -u nullglob
+    fi
+
+    # List sessions with logs but no cache (exited naturally)
+    if [[ -d "$LOG_DIR" ]]; then
+        shopt -s nullglob
+        for log_file in "${LOG_DIR}"/*.log; do
+            if [[ -f "$log_file" ]]; then
+                local name
+                name=$(basename "$log_file" .log)
+                # Skip if already listed from cache or still running
+                local already_seen=false
+                for seen in "${seen_names[@]+"${seen_names[@]}"}"; do
+                    if [[ "$seen" == "$name" ]]; then
+                        already_seen=true
+                        break
+                    fi
+                done
+                if [[ "$already_seen" == false ]] && ! tmux has-session -t "${PREFIX}${name}" 2>/dev/null; then
+                    printf "  %-20s exited (log available)\n" "$name"
+                    has_sessions=true
+                fi
             fi
         done
         shopt -u nullglob

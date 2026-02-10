@@ -17,6 +17,7 @@ cleanup() {
     $PTY kill test2 2>/dev/null || true
     $PTY kill test3 2>/dev/null || true
     rm -rf ~/.pty-session/cache/test* 2>/dev/null || true
+    rm -rf ~/.pty-session/logs/test* 2>/dev/null || true
 }
 
 # Run cleanup before starting
@@ -61,12 +62,19 @@ else
 fi
 echo
 
-# Test 4: Cache consumed after read
+# Test 4: Cache consumed after read (log fallback still works)
 echo "Test 4: Cache consumed after first read"
-if $PTY read test1 2>&1 | grep -q "not found"; then
-    echo "✓ PASS: Cache properly consumed"
+if [[ ! -f "${HOME}/.pty-session/cache/test1.output" ]]; then
+    echo "✓ PASS: Cache file properly consumed"
 else
-    echo "✗ FAIL: Cache should be consumed"
+    echo "✗ FAIL: Cache file should be consumed"
+    exit 1
+fi
+# Second read should still work via persistent log
+if $PTY read test1 2>&1 | grep -q "Test 1"; then
+    echo "✓ PASS: Persistent log fallback works after cache consumed"
+else
+    echo "✗ FAIL: Persistent log fallback should return content"
     exit 1
 fi
 echo

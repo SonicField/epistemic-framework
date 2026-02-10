@@ -13,6 +13,7 @@ for session in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^pt
     tmux kill-session -t "$session" 2>/dev/null || true
 done
 rm -rf ~/.pty-session/cache/* 2>/dev/null || true
+rm -rf ~/.pty-session/logs/* 2>/dev/null || true
 
 # Test 1: Path traversal
 echo "Test 1: Path traversal attempt"
@@ -71,6 +72,10 @@ cached=$(ls ~/.pty-session/cache/*.output 2>/dev/null | wc -l)
 echo "Cached: $cached"
 for i in {1..50}; do
     $PTY read "bulk$i" > /dev/null 2>&1 || true
+done
+# Clean up bulk log files
+for i in {1..50}; do
+    rm -f ~/.pty-session/logs/bulk${i}.log 2>/dev/null
 done
 echo "✓ PASS: Bulk sessions handled"
 echo
