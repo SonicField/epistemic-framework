@@ -7,7 +7,12 @@ allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(git:*), Bash
 
 **MANDATORY FIRST ACTION — DO NOT SKIP**
 
-Read `{{NBS_ROOT}}/terminal-weathering/concepts/terminal-weathering.md` before proceeding. That document defines the philosophy. This document defines what you DO.
+Read these documents before proceeding:
+
+1. `{{NBS_ROOT}}/terminal-weathering/concepts/terminal-weathering.md` — the philosophy
+2. `{{NBS_ROOT}}/terminal-weathering/concepts/c-extension-performance.md` — the cost model for C extensions
+
+This document defines what you DO.
 
 Then detect context and dispatch.
 

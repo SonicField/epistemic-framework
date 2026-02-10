@@ -9,7 +9,10 @@ You are reviewing a terminal weathering session. This review is dispatched by `/
 
 **Apply this review IN ADDITION TO the normal NBS review, not instead of it.**
 
-Read `{{NBS_ROOT}}/terminal-weathering/concepts/terminal-weathering.md` if you have not already this session.
+Read these documents if you have not already this session:
+
+1. `{{NBS_ROOT}}/terminal-weathering/concepts/terminal-weathering.md` — the philosophy
+2. `{{NBS_ROOT}}/terminal-weathering/concepts/c-extension-performance.md` — the cost model for C extensions
 
 ---
 
@@ -27,6 +30,7 @@ Read `{{NBS_ROOT}}/terminal-weathering/concepts/terminal-weathering.md` if you h
 | **ASan cleanliness** | Does all C code pass tests when compiled with `-fsanitize=address -fsanitize=undefined`? ASan is the C equivalent of Rust's borrow checker — without it, memory safety bugs are invisible. This check is non-negotiable. |
 | **Leak analysis** | Has `valgrind --leak-check=full` (or equivalent) confirmed zero leaks? Memory leaks in C extensions are silent, cumulative, and invisible to correctness tests. |
 | **Refcount discipline** | Is `Py_INCREF`/`Py_DECREF` balance documented and verified for every `PyObject*`? Every parameter, return value, and local variable holding a `PyObject*` must have documented ownership semantics (borrowed vs owned). |
+| **Calling convention discipline** | Is `METH_FASTCALL` used for all functions taking positional arguments? Is `PyArg_ParseTuple` absent? Is `Py_BuildValue` absent for single return values? Is `PyBool_FromLong` absent? See `c-extension-performance.md` for the full cost model. |
 
 ---
 
@@ -43,6 +47,7 @@ AIs revert to traditional development thinking under context pressure. This is t
 | **Conflating correctness and performance** | "It works but it's slower" is a **success** during the correctness phase. If the AI treats this as failure, it has confused the terminal goal of the current phase. |
 | **Skipping ASan because "it compiles fine"** | Compiling without errors is necessary but not sufficient. C code that compiles cleanly can contain use-after-free, buffer overflows, and undefined behaviour that only ASan catches. Skipping ASan because tests pass is the C equivalent of disabling the borrow checker. This is the critical drift pattern for C extensions. |
 | **Undocumented refcount ownership** | Every `PyObject*` must have documented ownership (borrowed reference vs new/strong reference). If the AI is writing C that manipulates Python objects without documenting who owns each reference, it is accumulating silent refcount bugs. These may not manifest until long after the buggy code runs. |
+| **Tutorial calling conventions** | `METH_VARARGS`, `PyArg_ParseTuple`, `Py_BuildValue` for single values, and `PyBool_FromLong` are the patterns most represented in training data. They are also the slow patterns. If the AI is using any of these, it has defaulted to the tutorial path. The C extension exists because Python is too slow — if the extension itself uses slow calling conventions, it has no reason to exist. See `c-extension-performance.md`. |
 
 ---
 
@@ -75,6 +80,9 @@ Include a **Terminal Weathering Correctness** section in the review output, afte
 
 ### Memory Safety
 [Is ASan being run on all C code? Is valgrind confirming zero leaks? Is refcount ownership documented for every PyObject*?]
+
+### Calling Convention Discipline
+[Is METH_FASTCALL used everywhere? Are tutorial patterns (METH_VARARGS, PyArg_ParseTuple, Py_BuildValue, PyBool_FromLong) absent? Are attribute accesses using interned strings or direct struct access?]
 
 ### Phase Clarity
 [Is the current phase (correctness vs fuse) clear? Is the AI working within it?]
