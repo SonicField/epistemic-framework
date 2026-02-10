@@ -377,7 +377,22 @@ Update the landscape and select the next candidate.
 
 5. **If terminal goal not met**: Return to Phase 3 (Expose) with updated candidate list.
 
-6. **Consider Fuse.** If sufficient contiguous type slot coverage exists within a module, consider removing the Python layer entirely. This is a separate verification cycle with its own evidence gate. Risks: Python-side consumers, dynamic dispatch, monkey-patching in test fixtures, implicit interface contracts, and subclass slot inheritance via `PyType_Modified`.
+---
+
+## Phase 6b: Fuse
+
+When sufficient contiguous type slot coverage exists within a type, consider removing the Python dispatch layer entirely. This is a separate verification cycle with its own evidence gate — not an automatic consequence of successful slot replacements.
+
+**Risks specific to fusion:**
+- Python-side consumers that import or subclass the type directly
+- Dynamic dispatch that routes through the Python layer
+- Monkey-patching in test fixtures
+- Implicit interface contracts the Python layer satisfies but the C slots do not
+- Subclass slot inheritance — `PyType_Modified` must propagate changes correctly
+
+**When to fuse:** Only after multiple contiguous slot replacements on the same type have passed their evidence gates. Fuse is opportunistic, not scheduled.
+
+**Falsifier:** "Removing the Python layer does not break any consumer" — test exhaustively. If any consumer breaks, the Python layer remains.
 
 ---
 

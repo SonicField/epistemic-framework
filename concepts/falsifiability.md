@@ -23,6 +23,17 @@ A claim without a potential falsifier is not wrong. It is not even wrong. It is 
 | Documents | Cite the source, verify against it |
 | Numerical work | Check convergence, boundaries, known solutions |
 | AI output | Do not trust. Verify. |
+| Methodology | State the conditions under which the process is wrong. Test against outcomes. |
+
+## Falsifying the Process
+
+Rules and documents are frozen claims. They encode evidence from a specific context — but contexts change, and a rule without a revision condition is unfalsifiable authority.
+
+"No X under any circumstances" is a strong claim. It carries the same three obligations as any other: what would prove it wrong, have we looked, and are we reporting honestly? A document that says "NO EXCEPTIONS" has declared itself beyond falsification. That is Ethos dressed as Logos.
+
+The terminal weathering pivot from Rust to C is a concrete example. The documentation said "RUST ONLY. NO C. NO EXCEPTIONS." When measurements showed Rust could not access the layer where the overhead lived, the evidence falsified the rule. The rule was not wrong when written — it was correct in its original context. It became wrong when the context changed. A rule that cannot accommodate new evidence is not rigorous. It is brittle.
+
+The practical question for any process rule: under what measured outcome would we change this? If you cannot answer, the rule is not a tool. It is a ritual.
 
 ## Layered Confidence
 
