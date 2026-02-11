@@ -248,7 +248,7 @@ TASKEOF
     sleep 2
 
     # Send the initial Claude command
-    tmux send-keys -t "$session" "claude" Enter
+    tmux send-keys -t "$session" "claude --dangerously-skip-permissions" Enter
 
     # Allow Claude to start
     sleep 3
