@@ -136,6 +136,14 @@ Answer these questions with evidence:
 1. [Specific question]
 2. [Specific question]
 
+## Tooling
+
+Your supervisor monitors you via `nbs-worker`. These tips avoid common mistakes:
+
+- **Do not read raw .log files** — they contain ANSI escape codes. Use `nbs-worker search <name> <regex>` for clean, searchable output.
+- **Update Status and Log sections** in this file when done — your supervisor reads them via `nbs-worker results`.
+- **Escalate blockers** by setting State to `escalated` — do not work around problems silently.
+
 ## Status
 
 State: pending
