@@ -199,6 +199,59 @@ static PyTypeObject NodeType = {
 
 This data comes from a controlled benchmark comparing C and Rust/PyO3 linked list traversal. The GC tracking effect was discovered as a confound: Rust's `#[pyclass]` does not enable GC tracking by default, making Rust objects 32 bytes vs C's 48 bytes. The apparent speed advantage of Rust over C disappeared entirely when the C type was rebuilt without GC tracking. With equal object sizes, C was 1.27x faster — the remaining gap being Rust's per-node INCREF/DECREF for ownership safety. Full data: `~/local/boundary-crossing-bench/11-02-2026-boundary-bench-paper.md`.
 
+## Reference Counting in Hot Paths
+
+`Py_INCREF` and `Py_DECREF` are not free. In a tight traversal loop, the cost of maintaining reference counts on every object touched is measurable and irreducible.
+
+Measured on the same linked list benchmark (1,000 nodes, CPython 3.15, equal 32-byte objects, no GC tracking):
+
+```
+C (no refcounting in loop)       2,030 ns  (2.0 ns/node)
+Rust/PyO3 (INCREF+DECREF/node)   2,560 ns  (2.6 ns/node)
+```
+
+The 0.6 ns/node gap is one `Py_INCREF` and one `Py_DECREF` per iteration. C follows raw pointers with no refcount changes in the hot path — the GIL guarantees no other thread can deallocate during traversal, so the raw pointer is safe in practice. Rust/PyO3's ownership model requires incrementing the next node's refcount before releasing the current one, on every iteration.
+
+```c
+/* C — no refcount changes in the loop */
+while (current != Py_None) {
+    total += ((NodeObject *)current)->value;
+    current = ((NodeObject *)current)->next;   /* raw pointer copy */
+}
+```
+
+This matters because:
+
+1. **The cost is per-object, not per-call.** A function that traverses 10,000 objects pays 6,000 ns in refcounting overhead alone. For a function body that is two pointer dereferences, refcounting is the dominant cost.
+
+2. **It compounds with free-threading.** Under `--disable-gil` (CPython 3.13+), `Py_INCREF`/`Py_DECREF` become atomic operations (`lock xadd` or equivalent). The per-object cost increases. Exact figures depend on contention, but atomic refcounting is strictly more expensive than non-atomic.
+
+3. **It is architecture-independent.** The GC tracking penalty depends on L1 cache size — on ARM cores with 64–128 KiB L1d, the GC overhead vanishes for moderate data structures because both the 32-byte and 48-byte layouts fit in cache. The INCREF/DECREF overhead does not vanish. It is the same 0.6 ns/node regardless of cache size, because it is instruction overhead, not memory pressure.
+
+### When refcounting matters
+
+Refcounting overhead matters when **all three** conditions hold:
+
+- The loop body is cheap (pointer dereferences, comparisons, arithmetic)
+- The loop touches many objects (hundreds or thousands per call)
+- The function is called frequently (hot path)
+
+For functions with expensive loop bodies (I/O, allocation, Python callbacks), the refcounting cost is noise. For tight traversal loops over object graphs, it is the floor.
+
+### Minimising refcount overhead in C
+
+C code can avoid refcounting in traversal loops when the GIL (or other mechanism) guarantees the objects remain alive:
+
+- **Borrowed references**: access `PyObject*` fields without INCREF when the parent object is kept alive for the duration of the loop
+- **Raw pointer traversal**: `current = ((NodeObject *)current)->next` is a pointer copy with no ownership implications
+- **Batch INCREF/DECREF**: if you must take a reference, do it once at the start and end of the traversal, not per node
+
+The rule: if you control the type and know the lifetime, do not pay for reference counting you do not need. Assert the lifetime guarantee rather than paying for it on every iteration.
+
+### Evidence: boundary-crossing-bench
+
+The 0.6 ns/node figure comes from the same controlled benchmark. With GC tracking removed from both implementations (equal 32-byte objects), the only remaining difference was Rust's per-node `clone_ref` (INCREF) and implicit drop (DECREF) vs C's raw pointer copy. Verified by inspecting compiler output: the C loop compiles to 4 x86 instructions, the Rust loop compiles to the same 4 plus two refcount operations. The cost difference matches the instruction difference exactly. Full data: `~/local/boundary-crossing-bench/11-02-2026-boundary-bench-paper.md`.
+
 ## The AI Failure Mode
 
 This pattern is not carelessness. It is a systematic bias.
