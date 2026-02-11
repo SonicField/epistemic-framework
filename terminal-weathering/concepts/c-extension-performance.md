@@ -143,6 +143,62 @@ for (int i = 0; i < n; i++) {
 }
 ```
 
+## GC Tracking
+
+`Py_TPFLAGS_HAVE_GC` is the default for types that contain `PyObject*` fields. It enables CPython's cyclic garbage collector to traverse and break reference cycles. The cost is not the traversal — it is the allocation.
+
+Every GC-tracked object is prepended with a 16-byte `PyGC_Head`. This changes object size:
+
+| Type flags | Per-object overhead | 1,000 objects |
+|-----------|-------------------|--------------|
+| `Py_TPFLAGS_DEFAULT` | 0 bytes | — |
+| `Py_TPFLAGS_DEFAULT \| Py_TPFLAGS_HAVE_GC` | +16 bytes | +16 KB |
+
+Measured on a linked list traversal (1,000 nodes, CPython 3.15, Intel Xeon 8339HC, L1d 32 KiB):
+
+```
+C (with GC, 48 bytes/node)       3,065 ns  (3.1 ns/node)
+C (no GC, 32 bytes/node)         2,030 ns  (2.0 ns/node)
+```
+
+Identical struct, identical loop body, identical compiler. The only difference is 16 bytes per object. The GC-tracked list (48 KB) overflows L1 cache (32 KB). The non-GC list (32 KB) fits. That 50% size increase produces a 50% speed decrease — not from GC work, but from cache misses.
+
+**Object size dominates instruction count at scale.** A version with more instructions per node but smaller objects (32 bytes) was faster than the version with fewer instructions but larger objects (48 bytes). Measure before you reason.
+
+### When to omit GC tracking
+
+A type does not need GC tracking if it **cannot form reference cycles**. This means:
+
+- No `PyObject*` fields, or
+- All `PyObject*` fields point to types that are guaranteed acyclic (e.g., `int`, `str`, `None`), or
+- The data structure is acyclic by construction and this invariant is enforced
+
+If GC tracking is omitted, `tp_traverse` and `tp_clear` are not needed, and allocation uses `PyObject_New` instead of `PyObject_GC_New`:
+
+```c
+/* GC-tracked — 48 bytes per object, requires traverse/clear */
+static PyTypeObject NodeType = {
+    ...
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    .tp_traverse = (traverseproc)Node_traverse,
+    .tp_clear = (inquiry)Node_clear,
+    .tp_new = Node_new,  /* uses PyObject_GC_New internally */
+};
+
+/* Not GC-tracked — 32 bytes per object, no traverse/clear */
+static PyTypeObject NodeType = {
+    ...
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = Node_new,  /* uses PyObject_New internally */
+};
+```
+
+**Warning**: omitting GC tracking on a type that *can* form cycles will cause memory leaks. The cyclic GC will never see the objects and never break the cycle. This is a correctness trade-off, not a free optimisation. Assert the acyclic invariant if you take this path.
+
+### Evidence: boundary-crossing-bench
+
+This data comes from a controlled benchmark comparing C and Rust/PyO3 linked list traversal. The GC tracking effect was discovered as a confound: Rust's `#[pyclass]` does not enable GC tracking by default, making Rust objects 32 bytes vs C's 48 bytes. The apparent speed advantage of Rust over C disappeared entirely when the C type was rebuilt without GC tracking. With equal object sizes, C was 1.27x faster — the remaining gap being Rust's per-node INCREF/DECREF for ownership safety. Full data: `~/local/boundary-crossing-bench/11-02-2026-boundary-bench-paper.md`.
+
 ## The AI Failure Mode
 
 This pattern is not carelessness. It is a systematic bias.
