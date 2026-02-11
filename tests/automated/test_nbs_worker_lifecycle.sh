@@ -18,6 +18,8 @@ NBS_WORKER="$PROJECT_ROOT/bin/nbs-worker"
 
 # Use a temp directory so we don't pollute the real .nbs/workers/
 TEST_DIR=$(mktemp -d)
+CROSS_DIR_PROJECT=$(mktemp -d)
+CROSS_DIR_OTHER=$(mktemp -d)
 ORIGINAL_DIR=$(pwd)
 
 ERRORS=0
@@ -27,7 +29,14 @@ cleanup() {
     # Kill any test sessions
     tmux kill-session -t "pty_lifecycle-test" 2>/dev/null || true
     tmux kill-session -t "pty_persist-test" 2>/dev/null || true
+    tmux kill-session -t "pty_crossdir-test" 2>/dev/null || true
+    # Kill any sessions spawned via nbs-worker (pty_ prefix + generated hash)
+    for s in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^pty_crossdir-" || true); do
+        tmux kill-session -t "$s" 2>/dev/null || true
+    done
     rm -rf "$TEST_DIR"
+    rm -rf "$CROSS_DIR_OTHER" 2>/dev/null || true
+    rm -rf "$CROSS_DIR_PROJECT" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -335,6 +344,57 @@ else
     fi
     ERRORS=$((ERRORS + 1))
 fi
+
+# --- Test 12: Cross-directory spawn writes to project dir, not caller's cwd ---
+echo "12. Cross-directory spawn (task files land in project dir)..."
+
+# cd to a different directory than the project
+cd "$CROSS_DIR_OTHER"
+
+# Spawn from here, pointing at the project dir
+# nbs-worker spawn launches Claude, which we don't want in tests.
+# Instead, test the file placement logic directly by calling spawn
+# and immediately killing the tmux session before Claude starts.
+CROSS_NAME=$("$NBS_WORKER" spawn crossdir "$CROSS_DIR_PROJECT" "Cross-directory test task" 2>/dev/null)
+
+if [[ -z "$CROSS_NAME" ]]; then
+    echo "   FAIL: spawn returned empty name"
+    ERRORS=$((ERRORS + 1))
+else
+    # Task file should be in the project dir, not in the other dir
+    if [[ -f "$CROSS_DIR_PROJECT/.nbs/workers/${CROSS_NAME}.md" ]]; then
+        echo "   PASS: Task file in project dir"
+    else
+        echo "   FAIL: Task file not found in project dir"
+        echo "   Expected: $CROSS_DIR_PROJECT/.nbs/workers/${CROSS_NAME}.md"
+        if [[ -f "$CROSS_DIR_OTHER/.nbs/workers/${CROSS_NAME}.md" ]]; then
+            echo "   Found in caller's cwd instead (the old bug)"
+        fi
+        ERRORS=$((ERRORS + 1))
+    fi
+
+    # Log file should also be in the project dir
+    if [[ -f "$CROSS_DIR_PROJECT/.nbs/workers/${CROSS_NAME}.log" ]]; then
+        echo "   PASS: Log file in project dir"
+    else
+        echo "   FAIL: Log file not found in project dir"
+        ERRORS=$((ERRORS + 1))
+    fi
+
+    # Nothing should have been created in the caller's cwd
+    if [[ -d "$CROSS_DIR_OTHER/.nbs" ]]; then
+        echo "   FAIL: .nbs directory created in caller's cwd (should only be in project dir)"
+        ERRORS=$((ERRORS + 1))
+    else
+        echo "   PASS: No .nbs created in caller's cwd"
+    fi
+
+    # Kill the tmux session (Claude would be starting up)
+    tmux kill-session -t "pty_${CROSS_NAME}" 2>/dev/null || true
+fi
+
+# Return to test dir for remaining tests
+cd "$TEST_DIR"
 
 # --- Summary ---
 echo ""
