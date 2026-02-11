@@ -173,17 +173,18 @@ cmd_spawn() {
     local abs_project_dir
     abs_project_dir=$(cd "$project_dir" && pwd)
 
+    # Workers directory is always relative to the project, not the caller's cwd
+    local spawn_workers_dir="$abs_project_dir/.nbs/workers"
+
     # Ensure workers directory exists
-    mkdir -p "$WORKERS_DIR"
+    mkdir -p "$spawn_workers_dir"
 
     # Generate unique name
     local name
     name=$(generate_name "$slug")
 
-    local task_file
-    task_file=$(task_file_path "$name")
-    local log_file
-    log_file=$(log_file_path "$name")
+    local task_file="${spawn_workers_dir}/${name}.md"
+    local log_file="${spawn_workers_dir}/${name}.log"
     local session
     session=$(session_name "$name")
 
@@ -235,7 +236,7 @@ TASKEOF
 
     # Start persistent logging via pipe-pane
     # This captures ALL output from session start, surviving session exit
-    tmux pipe-pane -t "$session" -o "cat >> '${WORKERS_DIR}/${name}.log'"
+    tmux pipe-pane -t "$session" -o "cat >> '${log_file}'"
 
     # Postcondition: tmux session is alive
     if ! tmux_alive "$name"; then
@@ -253,16 +254,19 @@ TASKEOF
     # Allow Claude to start
     sleep 3
 
-    # Send the task prompt
-    local abs_task_file
-    abs_task_file=$(cd "$(dirname "$task_file")" && pwd)/$(basename "$task_file")
-    tmux send-keys -t "$session" "Read ${abs_task_file} and execute the task. Update the Status and Log sections when complete." Enter
+    # Send the task prompt (task_file is already an absolute path)
+    tmux send-keys -t "$session" "Read ${task_file} and execute the task. Update the Status and Log sections when complete." Enter
 
     # Small delay then extra Enter for reliability
     sleep 0.5
     tmux send-keys -t "$session" "" Enter
 
     echo "$name"
+    echo "  project:   $abs_project_dir" >&2
+    echo "  task file:  $task_file" >&2
+    echo "  log file:   $log_file" >&2
+    echo "  tmux:       $session" >&2
+    echo "  note: run nbs-worker commands from $abs_project_dir" >&2
     return 0
 }
 
