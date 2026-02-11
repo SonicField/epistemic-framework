@@ -5,7 +5,7 @@ allowed-tools: Bash
 
 # Interactive Terminal Sessions (pty-session)
 
-This skill enables interaction with long-running interactive processes like REPLs, debuggers, and CLI tools that require multi-step conversation.
+This skill enables interaction with long-running interactive processes like REPLs, debuggers, and CLI tools that require multi-step conversation. It also provides access to the user's login shell environment for operations that require the user's credentials or environment configuration.
 
 ---
 
@@ -13,13 +13,15 @@ This skill enables interaction with long-running interactive processes like REPL
 
 The Bash tool is one-shot: run a command, get output, done. This prevents:
 - Interacting with REPLs (python, node, gdb)
-- Testing interactive CLI behaviour (e.g., AskUserQuestion prompts)
 - Controlling processes that require multi-step interaction
 - Monitoring long-running processes
+- Running commands that need the user's login environment (SSH keys, proxy credentials, authenticated git remotes, corporate tooling)
 
 ## The Solution
 
-Use `pty-session` - a tmux-based session manager that allows creating, interacting with, and reading from persistent terminal sessions.
+Use `pty-session` — a tmux-based session manager that allows creating, interacting with, and reading from persistent terminal sessions.
+
+Sessions run under the user's login shell with their full environment, so commands that fail from the Bash tool due to missing credentials or proxy configuration work through pty-session.
 
 ---
 
@@ -28,9 +30,9 @@ Use `pty-session` - a tmux-based session manager that allows creating, interacti
 ```bash
 pty-session create <name> <command>   # Create session running command
 pty-session send <name> <text>        # Send keystrokes (adds Enter by default)
-pty-session read <name>               # Capture current screen content
+pty-session read <name>               # Read output (live, cache, or log)
 pty-session wait <name> <pattern>     # Poll until pattern appears
-pty-session kill <name>               # Terminate session
+pty-session kill <name>               # Terminate session (screen cached)
 pty-session list                      # Show active sessions
 pty-session help                      # Show usage
 ```
@@ -53,9 +55,29 @@ pty-session help                      # Show usage
 
 ---
 
-## Usage Pattern
+## Usage Patterns
 
-### Basic Interaction
+### User's Login Shell
+
+When the Bash tool cannot perform an operation because it lacks credentials, proxy configuration, or other environment setup that the user's shell provides, use pty-session to run the command in the user's login shell:
+
+```bash
+# Push to a git remote that requires the user's credentials
+pty-session create gitpush 'bash --login'
+sleep 2
+pty-session send gitpush 'git push origin master 2>&1; echo "DONE_EXIT=$?"'
+sleep 10
+pty-session read gitpush
+pty-session kill gitpush
+```
+
+This is useful for:
+- **Git push/pull** to authenticated remotes
+- **Package installation** through corporate proxies
+- **SSH commands** that require the user's SSH agent
+- **Corporate tooling** that reads credentials from the user's environment
+
+### REPL Interaction
 
 ```bash
 # Start a Python REPL
@@ -82,7 +104,7 @@ pty-session kill mypy
 pty-session create build 'make -j8'
 
 # Check progress periodically
-pty-session read build | tail -10
+pty-session read build
 
 # Wait for completion
 pty-session wait build 'Build complete' --timeout=600
@@ -90,6 +112,20 @@ pty-session wait build 'Build complete' --timeout=600
 # Clean up
 pty-session kill build
 ```
+
+---
+
+## Persistent Logging
+
+All session output is logged to `~/.pty-session/logs/<name>.log` from the moment of creation. This log survives any exit — including sessions that exit naturally before `kill` is called.
+
+`read` resolves output from three sources in priority order:
+
+1. **Live pane** — if the session is still running, captures the current screen
+2. **Cache** — if the session was killed, reads the snapshot taken at kill time (consumed on read)
+3. **Persistent log** — if neither live nor cache is available, reads the full log (ANSI-stripped)
+
+This means output is never lost, regardless of how the session ends.
 
 ---
 
@@ -122,11 +158,13 @@ pty-session kill build
 
 ## When to Use This
 
+- Running commands that need the user's login environment (git push, SSH, corporate tools)
 - Interacting with REPLs (Python, Node, GDB, psql)
-- Testing interactive CLI behaviour
 - Automating multi-step terminal workflows
 - Running processes that need monitoring and intervention
 - Any situation where you need to send input and read output across multiple tool calls
+
+**For managing Claude worker instances**, use `nbs-worker` instead (see `/nbs-tmux-worker`).
 
 ---
 
