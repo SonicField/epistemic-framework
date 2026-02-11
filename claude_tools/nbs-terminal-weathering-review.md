@@ -48,6 +48,7 @@ AIs revert to traditional development thinking under context pressure. This is t
 | **Skipping ASan because "it compiles fine"** | Compiling without errors is necessary but not sufficient. C code that compiles cleanly can contain use-after-free, buffer overflows, and undefined behaviour that only ASan catches. Skipping ASan because tests pass is the C equivalent of disabling the borrow checker. This is the critical drift pattern for C extensions. |
 | **Undocumented refcount ownership** | Every `PyObject*` must have documented ownership (borrowed reference vs new/strong reference). If the AI is writing C that manipulates Python objects without documenting who owns each reference, it is accumulating silent refcount bugs. These may not manifest until long after the buggy code runs. |
 | **Tutorial calling conventions** | `METH_VARARGS`, `PyArg_ParseTuple`, `Py_BuildValue` for single values, and `PyBool_FromLong` are the patterns most represented in training data. They are also the slow patterns. If the AI is using any of these, it has defaulted to the tutorial path. The C extension exists because Python is too slow — if the extension itself uses slow calling conventions, it has no reason to exist. See `c-extension-performance.md`. |
+| **Reflexive INCREF/DECREF in traversal loops** | AIs default to `Py_INCREF`/`Py_DECREF` on every pointer copy because that is what the CPython documentation recommends. In tight traversal loops over C-struct-backed types where the GIL guarantees object lifetime, this is 0.6 ns/node of unnecessary overhead — and unlike GC tracking overhead, it does not vanish on hardware with larger caches. If the loop body is cheap (pointer dereferences, comparisons, arithmetic), look for borrowed references and raw pointer traversal instead of per-node refcounting. This is not a ban — sometimes INCREF is necessary — but the reviewer should verify the AI has considered the lifetime guarantee rather than reflexively refcounting. See `c-extension-performance.md`. |
 
 ---
 
@@ -82,7 +83,7 @@ Include a **Terminal Weathering Correctness** section in the review output, afte
 [Is ASan being run on all C code? Is valgrind confirming zero leaks? Is refcount ownership documented for every PyObject*?]
 
 ### Calling Convention Discipline
-[Is METH_FASTCALL used everywhere? Are tutorial patterns (METH_VARARGS, PyArg_ParseTuple, Py_BuildValue, PyBool_FromLong) absent? Are attribute accesses using interned strings or direct struct access?]
+[Is METH_FASTCALL used everywhere? Are tutorial patterns (METH_VARARGS, PyArg_ParseTuple, Py_BuildValue, PyBool_FromLong) absent? Are attribute accesses using interned strings or direct struct access? In tight traversal loops, is the code using borrowed references where lifetime is guaranteed, or paying for INCREF/DECREF on every iteration?]
 
 ### Phase Clarity
 [Is the current phase (correctness vs fuse) clear? Is the AI working within it?]
