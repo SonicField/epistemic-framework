@@ -1,2 +1,3 @@
 *.o
-nbs-chat-c
+nbs-chat
+nbs-chat-terminal

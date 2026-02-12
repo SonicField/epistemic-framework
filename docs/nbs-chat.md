@@ -20,7 +20,7 @@ NBS teams communicate through task files: write once, read once. No back-and-for
 
 ## How It Works
 
-A chat file is a plain text file with a header and base64-encoded messages. Any participant can read or write using `nbs-chat` commands. File locking (`flock`) ensures atomic operations. The lock is held only during the bash command — no participant can hold it across tool calls. This is the fundamental design constraint.
+A chat file is a plain text file with a header and base64-encoded messages. Any participant can read or write using `nbs-chat` commands. File locking (`flock`) ensures atomic operations. The lock is held only during each command invocation — no participant can hold it across tool calls. This is the fundamental design constraint.
 
 ```
 === nbs-chat ===
