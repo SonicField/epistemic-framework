@@ -1,0 +1,284 @@
+#!/bin/bash
+# nbs-chat-terminal: Interactive terminal client for nbs-chat
+#
+# Displays a scrolling message view and accepts typed input.
+# Lets humans participate in nbs-chat conversations alongside AI instances.
+#
+# Usage:
+#   nbs-chat-terminal <file> <handle>
+#
+# Controls:
+#   Type a message and press Enter to send.
+#   Ctrl-C to exit.
+#
+# Exit codes:
+#   0 - Clean exit
+#   1 - General error
+#   2 - Chat file not found
+#   4 - Invalid arguments
+
+set -uo pipefail
+
+# Resolve nbs-chat location (same directory as this script)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NBS_CHAT="$SCRIPT_DIR/nbs-chat"
+
+if [[ ! -x "$NBS_CHAT" ]]; then
+    echo "Error: nbs-chat not found at $NBS_CHAT" >&2
+    exit 1
+fi
+
+# --- Argument parsing ---
+
+CHAT_FILE="${1:-}"
+HANDLE="${2:-}"
+
+if [[ -z "$CHAT_FILE" ]] || [[ -z "$HANDLE" ]]; then
+    cat <<'USAGE'
+nbs-chat-terminal: Interactive terminal client for nbs-chat
+
+Usage:
+  nbs-chat-terminal <file> <handle>
+
+  <file>    Path to chat file (must exist, use 'nbs-chat create' first)
+  <handle>  Your display name in the chat
+
+Controls:
+  Type a message and press Enter to send.
+  Ctrl-C to exit.
+
+Example:
+  nbs-chat create .nbs/chat/debug.chat
+  nbs-chat-terminal .nbs/chat/debug.chat alex
+USAGE
+    exit 4
+fi
+
+if [[ ! -f "$CHAT_FILE" ]]; then
+    echo "Error: Chat file not found: $CHAT_FILE" >&2
+    echo "Create it first: nbs-chat create $CHAT_FILE" >&2
+    exit 2
+fi
+
+# --- Colour assignment ---
+
+# Palette of distinct colours (ANSI 256-colour codes)
+COLOURS=(
+    "38;5;39"    # Blue
+    "38;5;208"   # Orange
+    "38;5;41"    # Green
+    "38;5;213"   # Pink
+    "38;5;226"   # Yellow
+    "38;5;87"    # Cyan
+    "38;5;196"   # Red
+    "38;5;147"   # Lavender
+)
+BOLD="\033[1m"
+DIM="\033[2m"
+RESET="\033[0m"
+
+declare -A HANDLE_COLOURS
+COLOUR_INDEX=0
+
+get_colour() {
+    local h="$1"
+    if [[ -z "${HANDLE_COLOURS[$h]+x}" ]]; then
+        HANDLE_COLOURS["$h"]="${COLOURS[$COLOUR_INDEX]}"
+        COLOUR_INDEX=$(( (COLOUR_INDEX + 1) % ${#COLOURS[@]} ))
+    fi
+    echo "${HANDLE_COLOURS[$h]}"
+}
+
+# --- Display functions ---
+
+print_header() {
+    local cols
+    cols=$(tput cols 2>/dev/null || echo 80)
+    local bar
+    bar=$(printf '─%.0s' $(seq 1 "$cols"))
+
+    echo -e "${DIM}${bar}${RESET}"
+    echo -e "${BOLD} nbs-chat-terminal${RESET}  ${DIM}file:${RESET} $(basename "$CHAT_FILE")  ${DIM}handle:${RESET} $HANDLE"
+    echo -e "${DIM}${bar}${RESET}"
+    echo ""
+}
+
+format_message() {
+    local msg="$1"
+    # Extract handle and content
+    local msg_handle msg_content
+    msg_handle="${msg%%: *}"
+    msg_content="${msg#*: }"
+
+    local colour
+    colour=$(get_colour "$msg_handle")
+
+    if [[ "$msg_handle" == "$HANDLE" ]]; then
+        # Own messages slightly dimmer
+        echo -e "  ${DIM}\033[${colour}m${msg_handle}${RESET}${DIM}: ${msg_content}${RESET}"
+    else
+        echo -e "  \033[${colour}m${BOLD}${msg_handle}${RESET}: ${msg_content}"
+    fi
+}
+
+print_prompt() {
+    echo -en "${BOLD}${HANDLE}>${RESET} "
+}
+
+# --- Shared state via file ---
+# Background poller and foreground input loop need to share the message count.
+# Bash background processes get a copy of variables, not a reference.
+# Use a temp file as shared state.
+
+STATE_DIR=$(mktemp -d)
+COUNT_FILE="$STATE_DIR/msg_count"
+
+POLL_PID=""
+
+# --- Cleanup ---
+
+cleanup() {
+    # Kill background poller if running
+    if [[ -n "$POLL_PID" ]] && kill -0 "$POLL_PID" 2>/dev/null; then
+        kill "$POLL_PID" 2>/dev/null
+        wait "$POLL_PID" 2>/dev/null
+    fi
+
+    rm -rf "$STATE_DIR"
+
+    # Restore terminal
+    stty echo 2>/dev/null
+    echo ""
+    echo -e "${DIM}Left chat.${RESET}"
+    exit 0
+}
+trap cleanup INT TERM EXIT
+
+# --- Initial display ---
+
+clear
+print_header
+
+# Show existing messages
+EXISTING=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null)
+LAST_MSG_COUNT=0
+if [[ -n "$EXISTING" ]]; then
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        format_message "$line"
+    done <<< "$EXISTING"
+    LAST_MSG_COUNT=$(echo "$EXISTING" | grep -c '.' || true)
+    echo ""
+fi
+
+# Write initial count to shared state
+echo "$LAST_MSG_COUNT" > "$COUNT_FILE"
+
+# --- Background poller ---
+
+poll_loop() {
+    local nbs_chat="$1"
+    local chat_file="$2"
+    local my_handle="$3"
+    local count_file="$4"
+
+    # Re-declare colour state for the child process
+    local -A child_colours
+    local child_colour_idx=0
+    local child_colours_arr=(
+        "38;5;39" "38;5;208" "38;5;41" "38;5;213"
+        "38;5;226" "38;5;87" "38;5;196" "38;5;147"
+    )
+
+    while true; do
+        sleep 1
+
+        local known_count
+        known_count=$(cat "$count_file" 2>/dev/null || echo 0)
+
+        local current
+        current=$("$nbs_chat" read "$chat_file" 2>/dev/null)
+        local current_count=0
+        if [[ -n "$current" ]]; then
+            current_count=$(echo "$current" | grep -c '.' || true)
+        fi
+
+        if [[ $current_count -gt $known_count ]]; then
+            # Get only the new messages
+            local new_msgs
+            new_msgs=$("$nbs_chat" read "$chat_file" --last=$((current_count - known_count)) 2>/dev/null)
+
+            # Update shared count BEFORE printing to prevent race
+            echo "$current_count" > "$count_file"
+
+            if [[ -n "$new_msgs" ]]; then
+                # Filter out own messages (already displayed by the input loop)
+                local has_output=false
+
+                # Clear current input line
+                echo -en "\r\033[2K"
+
+                while IFS= read -r line; do
+                    [[ -z "$line" ]] && continue
+
+                    local line_handle
+                    line_handle="${line%%: *}"
+
+                    # Skip own messages — the input loop already displayed them
+                    if [[ "$line_handle" == "$my_handle" ]]; then
+                        continue
+                    fi
+
+                    # Colour assignment for child process
+                    local colour
+                    if [[ -z "${child_colours[$line_handle]+x}" ]]; then
+                        child_colours["$line_handle"]="${child_colours_arr[$child_colour_idx]}"
+                        child_colour_idx=$(( (child_colour_idx + 1) % ${#child_colours_arr[@]} ))
+                    fi
+                    colour="${child_colours[$line_handle]}"
+
+                    echo -e "  \033[${colour}m\033[1m${line_handle}\033[0m: ${line#*: }"
+                    has_output=true
+                done <<< "$new_msgs"
+
+                if [[ "$has_output" == true ]]; then
+                    # Redraw prompt
+                    echo -en "\033[1m${my_handle}>\033[0m "
+                fi
+            fi
+        fi
+    done
+}
+
+# Start background poller
+poll_loop "$NBS_CHAT" "$CHAT_FILE" "$HANDLE" "$COUNT_FILE" &
+POLL_PID=$!
+
+# --- Input loop ---
+
+while true; do
+    print_prompt
+    if IFS= read -r user_input; then
+        # Clear the prompt line
+        echo -en "\r\033[2K"
+
+        if [[ -z "$user_input" ]]; then
+            continue
+        fi
+
+        # Send the message
+        if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$user_input" 2>/dev/null; then
+            # Display own message immediately
+            format_message "${HANDLE}: ${user_input}"
+
+            # Update shared count so the poller skips this message
+            current_count=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
+            echo "$current_count" > "$COUNT_FILE"
+        else
+            echo -e "  ${DIM}(send failed)${RESET}"
+        fi
+    else
+        # EOF (Ctrl-D)
+        exit 0
+    fi
+done
