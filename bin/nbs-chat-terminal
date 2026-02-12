@@ -8,7 +8,9 @@
 #   nbs-chat-terminal <file> <handle>
 #
 # Controls:
-#   Type a message and press Enter to send.
+#   Type a message and press Enter to add a line.
+#   Press Enter on an empty line to send the message.
+#   Type /edit on an empty line to compose in $EDITOR.
 #   Ctrl-C to exit.
 #
 # Exit codes:
@@ -44,7 +46,9 @@ Usage:
   <handle>  Your display name in the chat
 
 Controls:
-  Type a message and press Enter to send.
+  Type a message and press Enter to add a line.
+  Press Enter on an empty line to send the message.
+  Type /edit on an empty line to compose in $EDITOR.
   Ctrl-C to exit.
 
 Example:
@@ -99,6 +103,7 @@ print_header() {
 
     echo -e "${DIM}${bar}${RESET}"
     echo -e "${BOLD} nbs-chat-terminal${RESET}  ${DIM}file:${RESET} $(basename "$CHAT_FILE")  ${DIM}handle:${RESET} $HANDLE"
+    echo -e "${DIM}  Enter = new line  |  blank line = send  |  /edit = open editor${RESET}"
     echo -e "${DIM}${bar}${RESET}"
     echo ""
 }
@@ -123,6 +128,10 @@ format_message() {
 
 print_prompt() {
     echo -en "${BOLD}${HANDLE}>${RESET} "
+}
+
+print_continuation() {
+    echo -en "${DIM}...${RESET} "
 }
 
 # --- Shared state via file ---
@@ -254,31 +263,90 @@ poll_loop() {
 poll_loop "$NBS_CHAT" "$CHAT_FILE" "$HANDLE" "$COUNT_FILE" &
 POLL_PID=$!
 
+# --- Editor mode ---
+
+open_editor() {
+    local editor="${EDITOR:-vim}"
+    local tmpfile
+    tmpfile=$(mktemp "${STATE_DIR}/edit.XXXXXX")
+
+    # Run editor — this takes over the terminal
+    "$editor" "$tmpfile"
+
+    # Read the file content
+    local content=""
+    if [[ -f "$tmpfile" ]] && [[ -s "$tmpfile" ]]; then
+        content=$(cat "$tmpfile")
+    fi
+    rm -f "$tmpfile"
+
+    echo "$content"
+}
+
 # --- Input loop ---
 
+INPUT_BUFFER=""
+
 while true; do
-    print_prompt
-    if IFS= read -r user_input; then
+    if [[ -z "$INPUT_BUFFER" ]]; then
+        print_prompt
+    else
+        print_continuation
+    fi
+
+    if IFS= read -re user_input; then
         # Clear the prompt line
         echo -en "\r\033[2K"
 
-        if [[ -z "$user_input" ]]; then
+        # Check for /edit command (only on first line of buffer)
+        if [[ -z "$INPUT_BUFFER" ]] && [[ "$user_input" == "/edit" ]]; then
+            msg=$(open_editor)
+            if [[ -n "$msg" ]]; then
+                if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$msg" 2>/dev/null; then
+                    format_message "${HANDLE}: ${msg}"
+                    current_count=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
+                    echo "$current_count" > "$COUNT_FILE"
+                else
+                    echo -e "  ${DIM}(send failed)${RESET}"
+                fi
+            else
+                echo -e "  ${DIM}(empty — not sent)${RESET}"
+            fi
+            INPUT_BUFFER=""
             continue
         fi
 
-        # Send the message
-        if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$user_input" 2>/dev/null; then
-            # Display own message immediately
-            format_message "${HANDLE}: ${user_input}"
+        # Empty line on empty buffer — ignore (no accidental sends)
+        if [[ -z "$INPUT_BUFFER" ]] && [[ -z "$user_input" ]]; then
+            continue
+        fi
 
-            # Update shared count so the poller skips this message
-            current_count=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
-            echo "$current_count" > "$COUNT_FILE"
+        # Empty line with content in buffer — send
+        if [[ -n "$INPUT_BUFFER" ]] && [[ -z "$user_input" ]]; then
+            if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$INPUT_BUFFER" 2>/dev/null; then
+                format_message "${HANDLE}: ${INPUT_BUFFER}"
+                current_count=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
+                echo "$current_count" > "$COUNT_FILE"
+            else
+                echo -e "  ${DIM}(send failed)${RESET}"
+            fi
+            INPUT_BUFFER=""
+            continue
+        fi
+
+        # Non-empty line — append to buffer
+        if [[ -z "$INPUT_BUFFER" ]]; then
+            INPUT_BUFFER="$user_input"
         else
-            echo -e "  ${DIM}(send failed)${RESET}"
+            INPUT_BUFFER="${INPUT_BUFFER}
+${user_input}"
         fi
     else
         # EOF (Ctrl-D)
+        # Send any remaining buffer before exiting
+        if [[ -n "$INPUT_BUFFER" ]]; then
+            "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$INPUT_BUFFER" 2>/dev/null
+        fi
         exit 0
     fi
 done
