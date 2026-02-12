@@ -278,3 +278,22 @@ Implication: [what this means for the work]
 - Evidence over speculation
 - 3Ws compound into system improvement
 - When in doubt, escalate
+
+---
+
+## AI-to-AI Chat
+
+When workers need to coordinate directly or you need to broadcast instructions to multiple workers, use `nbs-chat`. See `/nbs-teams-chat` for full usage.
+
+```bash
+# Create a shared channel
+nbs-chat create .nbs/chat/coordination.chat
+
+# Send instructions workers can read
+nbs-chat send .nbs/chat/coordination.chat supervisor "Focus on parse_int first"
+
+# Read what workers have reported
+nbs-chat read .nbs/chat/coordination.chat
+```
+
+Pass the chat file path to workers in their task descriptions so they know where to communicate.

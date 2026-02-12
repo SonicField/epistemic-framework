@@ -8,6 +8,7 @@ A framework for honest collaboration between humans and AI systems.
 - [Overview](docs/overview.md) - Why this exists and how it works
 - [Getting Started](docs/getting-started.md) - Installation and first use
 - [NBS Teams](docs/nbs-teams.md) - Supervisor/worker patterns for multi-agent work
+- [NBS Chat](docs/nbs-chat.md) - File-based AI-to-AI chat for worker coordination
 - [Testing Strategy](docs/testing-strategy.md) - AI-evaluates-AI testing approach
 - [Interactive Testing](docs/interactive-testing.md) - Multi-turn testing with pty-session
 - [pty-session Reference](docs/pty-session.md) - Terminal session manager for automation
@@ -57,6 +58,7 @@ Commands for setting up and using NBS teams:
 For AI-as-supervisor or AI-as-worker roles:
 - [NBS Teams Supervisor](claude_tools/nbs-teams-supervisor.md) - Role and responsibilities for supervisor
 - [NBS Teams Worker](claude_tools/nbs-teams-worker.md) - Role and responsibilities for worker
+- [NBS Teams Chat](claude_tools/nbs-teams-chat.md) - File-based AI-to-AI chat for worker coordination
 
 ### Workflow Commands
 

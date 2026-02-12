@@ -72,6 +72,7 @@ If you're writing implementation steps, scope is too narrow. Set the goal, let w
 | `/nbs-teams-help` | Interactive guidance - ask Claude for help |
 | `/nbs-teams-supervisor` | Supervisor role reference |
 | `/nbs-teams-worker` | Worker role reference |
+| `/nbs-teams-chat` | AI-to-AI chat reference |
 | `/nbs-tmux-worker` | nbs-worker command reference |
 
 ### Getting Help
@@ -123,5 +124,6 @@ Don't use when:
 
 ## See Also
 
+- [nbs-chat](nbs-chat.md) - File-based AI-to-AI chat for worker coordination
 - [nbs-worker](nbs-worker.md) - Worker lifecycle management (spawn, monitor, search, dismiss)
 - [Why NBS](Why-NBS.md) - The philosophy behind the framework
