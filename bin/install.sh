@@ -11,6 +11,8 @@
 #   PREFIX/templates/    - Symlink to repo templates/
 #   PREFIX/bin/          - Symlink to repo bin/
 #   ~/.claude/commands/* - Symlinks to PREFIX/commands/*
+#
+# Optionally adds PREFIX/bin to PATH via shell rc file (y/N prompt).
 
 set -euo pipefail
 
@@ -151,9 +153,69 @@ for cmd in "$PREFIX/commands"/*.md; do
     fi
 done
 
+# 5. Offer to add bin/ to PATH
+BIN_DIR="$PREFIX/bin"
+PATH_LINE="export PATH=\"${BIN_DIR}:\$PATH\"  # NBS Framework"
+
+offer_path_setup() {
+    # Detect shell rc file
+    local rc_file=""
+    local shell_name
+    shell_name=$(basename "${SHELL:-/bin/bash}")
+
+    case "$shell_name" in
+        bash)
+            rc_file="$HOME/.bashrc"
+            ;;
+        zsh)
+            rc_file="$HOME/.zshrc"
+            ;;
+        fish)
+            echo "  Fish shell detected. Add manually:"
+            echo "    fish_add_path ${BIN_DIR}"
+            return 0
+            ;;
+        *)
+            echo "  Unknown shell ($shell_name). Add manually:"
+            echo "    export PATH=\"${BIN_DIR}:\$PATH\""
+            return 0
+            ;;
+    esac
+
+    # Check if already present
+    if [[ -f "$rc_file" ]] && grep -qF "# NBS Framework" "$rc_file"; then
+        echo "  PATH already configured in $rc_file"
+        return 0
+    fi
+
+    # Prompt
+    echo ""
+    echo "Add NBS tools to your PATH?"
+    echo "  This appends to $rc_file:"
+    echo "    $PATH_LINE"
+    echo ""
+    read -rp "  Add to PATH? y/[N]: " answer
+
+    case "$answer" in
+        [Yy]|[Yy]es)
+            echo "" >> "$rc_file"
+            echo "$PATH_LINE" >> "$rc_file"
+            echo "  Added to $rc_file"
+            echo "  Run 'source $rc_file' or start a new shell to activate."
+            ;;
+        *)
+            echo "  Skipped. You can add manually later:"
+            echo "    echo '$PATH_LINE' >> $rc_file"
+            ;;
+    esac
+}
+
+offer_path_setup
+
 echo ""
 echo "Installation complete."
 echo "  Framework root: $PREFIX"
 echo "  Commands: $CLAUDE_COMMANDS_DIR"
+echo "  Binaries: $BIN_DIR"
 echo ""
 echo "Restart Claude Code to pick up new commands."
