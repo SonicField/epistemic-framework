@@ -307,8 +307,18 @@ while true; do
 
         # Check for /edit command (only on first line of buffer)
         if [[ -z "$INPUT_BUFFER" ]] && [[ "$user_input" == "/edit" ]]; then
+            # Pause poller so it doesn't clobber the editor display
+            if [[ -n "$POLL_PID" ]] && kill -0 "$POLL_PID" 2>/dev/null; then
+                kill "$POLL_PID" 2>/dev/null
+                wait "$POLL_PID" 2>/dev/null
+            fi
+
             open_editor
             msg=$(read_editor_result)
+
+            # Restart poller
+            poll_loop "$NBS_CHAT" "$CHAT_FILE" "$HANDLE" "$COUNT_FILE" &
+            POLL_PID=$!
             if [[ -n "$msg" ]]; then
                 if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$msg" 2>/dev/null; then
                     format_message "${HANDLE}: ${msg}"
