@@ -1,8 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L -O2
+
+# Build modes
+# Default: optimised with asserts ON (no -DNDEBUG).
+# Asserts are executable specifications, not debugging aids.
+COMMON_CFLAGS = -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L
+CFLAGS ?= $(COMMON_CFLAGS) -O2
 LDFLAGS =
 
 BIN_DIR = ../../bin
+TEST_DIR = ../../tests/automated
 
 # Shared library objects (used by both binaries)
 LIB_SRCS = chat_file.c base64.c lock.c
@@ -18,15 +24,21 @@ TERM_SRCS = terminal.c
 TERM_OBJS = $(TERM_SRCS:.c=.o)
 TERM_TARGET = nbs-chat-terminal
 
-.PHONY: all clean install
+# NDEBUG verification
+ASSERT_CHECK = assert_check
 
-all: $(CLI_TARGET) $(TERM_TARGET)
+.PHONY: all clean install debug asan test test-debug test-asan test-all
+
+all: $(CLI_TARGET) $(TERM_TARGET) $(ASSERT_CHECK)
 
 $(CLI_TARGET): $(CLI_OBJS) $(LIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(TERM_TARGET): $(TERM_OBJS) $(LIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(ASSERT_CHECK): assert_check.c
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -36,12 +48,42 @@ install: all
 	cp $(CLI_TARGET) $(BIN_DIR)/
 	cp $(TERM_TARGET) $(BIN_DIR)/
 
+# --- Build modes ---
+
+debug: CFLAGS = $(COMMON_CFLAGS) -O0 -g
+debug: clean all
+
+asan: CC = clang
+asan: CFLAGS = $(COMMON_CFLAGS) -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer
+asan: LDFLAGS = -fsanitize=address,undefined
+asan: clean all
+
+# --- Test targets ---
+
+test: all install
+	./$(ASSERT_CHECK)
+	bash $(TEST_DIR)/test_nbs_chat_lifecycle.sh
+	bash $(TEST_DIR)/test_nbs_chat_terminal.sh
+
+test-debug: debug install
+	./$(ASSERT_CHECK)
+	bash $(TEST_DIR)/test_nbs_chat_lifecycle.sh
+	bash $(TEST_DIR)/test_nbs_chat_terminal.sh
+
+test-asan: asan install
+	./$(ASSERT_CHECK)
+	bash $(TEST_DIR)/test_nbs_chat_lifecycle.sh
+	bash $(TEST_DIR)/test_nbs_chat_terminal.sh
+
+# Full test run: release + ASan
+test-all: test test-asan
+
 # Dependencies
 main.o: main.c chat_file.h
 terminal.o: terminal.c chat_file.h
 chat_file.o: chat_file.c chat_file.h base64.h lock.h
-base64.o: base64.c base64.h
-lock.o: lock.c lock.h
+base64.o: base64.c base64.h chat_file.h
+lock.o: lock.c lock.h chat_file.h
 
 clean:
-	rm -f $(LIB_OBJS) $(CLI_OBJS) $(TERM_OBJS) $(CLI_TARGET) $(TERM_TARGET)
+	rm -f $(LIB_OBJS) $(CLI_OBJS) $(TERM_OBJS) $(CLI_TARGET) $(TERM_TARGET) $(ASSERT_CHECK)

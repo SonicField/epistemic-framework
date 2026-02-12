@@ -20,6 +20,7 @@
  */
 
 #include "chat_file.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +57,9 @@ static int cmd_create(int argc, char **argv) {
 
     const char *path = argv[2];
 
+    /* Precondition: path validated from argv */
+    ASSERT_MSG(path != NULL, "cmd_create: path is NULL after argv extraction");
+
     /* Resolve to absolute path */
     char abs_path[MAX_PATH_LEN * 2];
     if (path[0] != '/') {
@@ -90,6 +94,11 @@ static int cmd_send(int argc, char **argv) {
     const char *handle = argv[3];
     const char *message = argv[4];
 
+    /* Preconditions: args validated from argv */
+    ASSERT_MSG(path != NULL, "cmd_send: path is NULL");
+    ASSERT_MSG(handle != NULL, "cmd_send: handle is NULL");
+    ASSERT_MSG(message != NULL, "cmd_send: message is NULL");
+
     /* Check file exists */
     FILE *f = fopen(path, "r");
     if (!f) {
@@ -114,6 +123,10 @@ static int cmd_read(int argc, char **argv) {
     }
 
     const char *path = argv[2];
+
+    /* Precondition: path validated from argv */
+    ASSERT_MSG(path != NULL, "cmd_read: path is NULL");
+
     int last_n = -1;
     const char *since_handle = NULL;
 
@@ -179,6 +192,11 @@ static int cmd_poll(int argc, char **argv) {
 
     const char *path = argv[2];
     const char *handle = argv[3];
+
+    /* Preconditions: args validated from argv */
+    ASSERT_MSG(path != NULL, "cmd_poll: path is NULL");
+    ASSERT_MSG(handle != NULL, "cmd_poll: handle is NULL");
+
     int timeout = 10;
 
     for (int i = 4; i < argc; i++) {
@@ -232,6 +250,9 @@ static int cmd_participants(int argc, char **argv) {
     }
 
     const char *path = argv[2];
+
+    /* Precondition: path validated from argv */
+    ASSERT_MSG(path != NULL, "cmd_participants: path is NULL");
 
     FILE *f = fopen(path, "r");
     if (!f) {

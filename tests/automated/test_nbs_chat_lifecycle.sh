@@ -20,6 +20,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 NBS_CHAT="${NBS_CHAT_BIN:-$PROJECT_ROOT/bin/nbs-chat}"
+NBS_TERMINAL="${NBS_TERMINAL_BIN:-$PROJECT_ROOT/bin/nbs-chat-terminal}"
 
 TEST_DIR=$(mktemp -d)
 ERRORS=0
@@ -320,6 +321,16 @@ wait "$BG_PID" 2>/dev/null || true
 
 check "Poll ignores self, gets other" "$( [[ "$POLL_RC" -eq 0 ]] && echo "$POLL_OUTPUT" | grep -qF 'other: External message' && echo pass || echo fail )"
 check "Self-message not in output" "$( ! echo "$POLL_OUTPUT" | grep -qF 'watcher: My own message' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 15: Assert strings present in binaries ---
+echo "15. Assert verification..."
+CLI_ASSERT_STRINGS=$(strings "$NBS_CHAT" | grep -c "ASSERT FAILED" || true)
+check "CLI binary contains ASSERT_MSG strings" "$( [[ "$CLI_ASSERT_STRINGS" -gt 0 ]] && echo pass || echo fail )"
+
+TERM_ASSERT_STRINGS=$(strings "$NBS_TERMINAL" | grep -c "ASSERT FAILED" || true)
+check "Terminal binary contains ASSERT_MSG strings" "$( [[ "$TERM_ASSERT_STRINGS" -gt 0 ]] && echo pass || echo fail )"
 
 echo ""
 

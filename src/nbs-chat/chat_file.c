@@ -120,7 +120,7 @@ static int update_participants(participant_t *parts, int count,
 /* --- Public API --- */
 
 int chat_create(const char *path) {
-    assert(path != NULL);
+    ASSERT_MSG(path != NULL, "chat_create: path is NULL");
 
     /* Check if file already exists */
     struct stat st;
@@ -159,15 +159,17 @@ int chat_create(const char *path) {
 
     /* Postcondition: verify file-length matches actual size */
     if (stat(path, &st) == 0) {
-        assert(st.st_size == file_len);
+        ASSERT_MSG(st.st_size == file_len,
+                   "chat_create postcondition: file-length header %ld != actual size %ld",
+                   file_len, (long)st.st_size);
     }
 
     return 0;
 }
 
 int chat_read(const char *path, chat_state_t *state) {
-    assert(path != NULL);
-    assert(state != NULL);
+    ASSERT_MSG(path != NULL, "chat_read: path is NULL");
+    ASSERT_MSG(state != NULL, "chat_read: state is NULL");
 
     memset(state, 0, sizeof(*state));
 
@@ -252,14 +254,19 @@ int chat_read(const char *path, chat_state_t *state) {
         }
     }
 
+    /* Invariant: message_count must be within bounds */
+    ASSERT_MSG(state->message_count >= 0 && state->message_count <= MAX_MESSAGES,
+               "chat_read: message_count %d out of bounds [0, %d]",
+               state->message_count, MAX_MESSAGES);
+
     fclose(f);
     return 0;
 }
 
 int chat_send(const char *path, const char *handle, const char *message) {
-    assert(path != NULL);
-    assert(handle != NULL);
-    assert(message != NULL);
+    ASSERT_MSG(path != NULL, "chat_send: path is NULL");
+    ASSERT_MSG(handle != NULL, "chat_send: handle is NULL");
+    ASSERT_MSG(message != NULL, "chat_send: message is NULL");
 
     int lock_fd = chat_lock_acquire(path);
     if (lock_fd < 0) return -1;
@@ -280,6 +287,10 @@ int chat_send(const char *path, const char *handle, const char *message) {
         return -1;
     }
     snprintf(raw, raw_len + 1, "%s: %s", handle, message);
+
+    /* Postcondition: raw message was fully written */
+    ASSERT_MSG(raw_len > 0,
+               "chat_send: raw message length is zero for handle '%s'", handle);
 
     /* Base64 encode */
     size_t encoded_size = base64_encoded_size(raw_len);
@@ -360,6 +371,10 @@ int chat_send(const char *path, const char *handle, const char *message) {
     }
     fclose(f);
 
+    /* Invariant: encoded_line_count must be non-negative */
+    ASSERT_MSG(encoded_line_count >= 0,
+               "chat_send: encoded_line_count went negative: %d", encoded_line_count);
+
     /* Calculate content without file-length for size computation */
     size_t content_size = header_len;
     for (int i = 0; i < encoded_line_count; i++) {
@@ -418,13 +433,12 @@ int chat_send(const char *path, const char *handle, const char *message) {
     fprintf(f, "%s\n", encoded);
     fclose(f);
 
-    /* Postcondition: verify file-length */
+    /* Postcondition: verify file-length matches actual size */
     struct stat st;
     if (stat(path, &st) == 0) {
-        if (st.st_size != file_len) {
-            fprintf(stderr, "WARNING: file-length mismatch: expected %ld, got %ld\n",
-                    file_len, (long)st.st_size);
-        }
+        ASSERT_MSG(st.st_size == file_len,
+                   "chat_send postcondition: file-length header %ld != actual size %ld",
+                   file_len, (long)st.st_size);
     }
 
     /* Cleanup */
@@ -439,9 +453,10 @@ int chat_send(const char *path, const char *handle, const char *message) {
 }
 
 int chat_poll(const char *path, const char *handle, int timeout_secs) {
-    assert(path != NULL);
-    assert(handle != NULL);
-    assert(timeout_secs >= 0);
+    ASSERT_MSG(path != NULL, "chat_poll: path is NULL");
+    ASSERT_MSG(handle != NULL, "chat_poll: handle is NULL");
+    ASSERT_MSG(timeout_secs >= 0,
+               "chat_poll: timeout_secs is negative: %d", timeout_secs);
 
     /* Get initial message count */
     chat_state_t state;

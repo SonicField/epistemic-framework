@@ -3,6 +3,7 @@
  */
 
 #include "base64.h"
+#include "chat_file.h"
 #include <assert.h>
 #include <string.h>
 
@@ -44,8 +45,9 @@ static int is_valid_base64_char(unsigned char c) {
 int base64_encode(const unsigned char *input, size_t input_len,
                   char *output, size_t output_size) {
     /* Preconditions */
-    assert(output != NULL);
-    assert(input != NULL || input_len == 0);
+    ASSERT_MSG(output != NULL, "base64_encode: output buffer is NULL");
+    ASSERT_MSG(input != NULL || input_len == 0,
+               "base64_encode: input is NULL with non-zero length %zu", input_len);
 
     size_t needed = base64_encoded_size(input_len);
     if (output_size < needed) return -1;
@@ -84,7 +86,8 @@ int base64_encode(const unsigned char *input, size_t input_len,
     output[j] = '\0';
 
     /* Postcondition */
-    assert(j == needed - 1);
+    ASSERT_MSG(j == needed - 1,
+               "base64_encode: output length %zu != expected %zu", j, needed - 1);
 
     return (int)j;
 }
@@ -92,8 +95,8 @@ int base64_encode(const unsigned char *input, size_t input_len,
 int base64_decode(const char *input, size_t input_len,
                   unsigned char *output, size_t output_size) {
     /* Preconditions */
-    assert(input != NULL);
-    assert(output != NULL);
+    ASSERT_MSG(input != NULL, "base64_decode: input buffer is NULL");
+    ASSERT_MSG(output != NULL, "base64_decode: output buffer is NULL");
 
     /* Strip trailing whitespace/newlines */
     while (input_len > 0 && (input[input_len - 1] == '\n' ||
@@ -132,7 +135,8 @@ int base64_decode(const char *input, size_t input_len,
     }
 
     /* Postcondition */
-    assert(j == out_len);
+    ASSERT_MSG(j == out_len,
+               "base64_decode: decoded length %zu != expected %zu", j, out_len);
 
     return (int)out_len;
 }

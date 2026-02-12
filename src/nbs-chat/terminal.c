@@ -62,6 +62,9 @@ static int handle_colour_count = 0;
 static int next_colour = 0;
 
 static const char *get_colour(const char *handle) {
+    /* Precondition */
+    ASSERT_MSG(handle != NULL, "get_colour: handle is NULL");
+
     for (int i = 0; i < handle_colour_count; i++) {
         if (strcmp(handle_colours[i].handle, handle) == 0) {
             return COLOURS[handle_colours[i].colour_index];
@@ -72,6 +75,12 @@ static const char *get_colour(const char *handle) {
                  "%s", handle);
         handle_colours[handle_colour_count].colour_index = next_colour;
         handle_colour_count++;
+
+        /* Invariant: colour count within bounds */
+        ASSERT_MSG(handle_colour_count <= MAX_PARTICIPANTS,
+                   "get_colour: handle_colour_count %d exceeds MAX_PARTICIPANTS %d",
+                   handle_colour_count, MAX_PARTICIPANTS);
+
         int idx = next_colour;
         next_colour = (next_colour + 1) % NUM_COLOURS;
         return COLOURS[idx];
@@ -90,6 +99,11 @@ static volatile sig_atomic_t g_quit = 0;
 
 static void format_message(const char *handle, const char *content,
                            const char *my_handle) {
+    /* Preconditions */
+    ASSERT_MSG(handle != NULL, "format_message: handle is NULL");
+    ASSERT_MSG(content != NULL, "format_message: content is NULL");
+    ASSERT_MSG(my_handle != NULL, "format_message: my_handle is NULL");
+
     const char *colour = get_colour(handle);
     if (strcmp(handle, my_handle) == 0) {
         /* Own messages slightly dimmer */
@@ -129,6 +143,15 @@ static void print_help(void) {
 /* --- Message checking --- */
 
 static void check_new_messages(void) {
+    /* Preconditions: global state must be initialised */
+    ASSERT_MSG(g_chat_file != NULL,
+               "check_new_messages: called before g_chat_file initialised");
+    ASSERT_MSG(g_handle != NULL,
+               "check_new_messages: called before g_handle initialised");
+    /* Invariant: message count must be non-negative */
+    ASSERT_MSG(g_msg_count >= 0,
+               "check_new_messages: g_msg_count is negative: %d", g_msg_count);
+
     chat_state_t state;
     if (chat_read(g_chat_file, &state) < 0) return;
 
@@ -311,6 +334,11 @@ static char *read_line(void) {
     }
 
     buf[len] = '\0';
+
+    /* Postcondition: returned buffer is null-terminated */
+    ASSERT_MSG(buf[len] == '\0',
+               "read_line: returned buffer not null-terminated at position %zu", len);
+
     return buf;
 }
 
@@ -339,6 +367,10 @@ int main(int argc, char **argv) {
 
     g_chat_file = argv[1];
     g_handle = argv[2];
+
+    /* Preconditions: args validated from argv */
+    ASSERT_MSG(g_chat_file != NULL, "main: chat_file path is NULL");
+    ASSERT_MSG(g_handle != NULL, "main: handle is NULL");
 
     /* Check file exists */
     struct stat st;
@@ -478,6 +510,12 @@ int main(int argc, char **argv) {
         memcpy(input_buffer + input_len, line, line_len);
         input_len += line_len;
         input_buffer[input_len] = '\0';
+
+        /* Invariant: buffer is null-terminated and within capacity */
+        ASSERT_MSG(input_buffer[input_len] == '\0',
+                   "input_buffer not null-terminated at position %zu", input_len);
+        ASSERT_MSG(input_len < input_cap,
+                   "input_len %zu >= input_cap %zu", input_len, input_cap);
 
         free(line);
     }

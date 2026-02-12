@@ -3,6 +3,7 @@
  */
 
 #include "lock.h"
+#include "chat_file.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -10,7 +11,7 @@
 #include <unistd.h>
 
 int chat_lock_acquire(const char *chat_path) {
-    assert(chat_path != NULL);
+    ASSERT_MSG(chat_path != NULL, "chat_lock_acquire: path is NULL");
 
     /* Build lock file path: chat_path + ".lock" */
     size_t path_len = strlen(chat_path);
@@ -37,7 +38,7 @@ int chat_lock_acquire(const char *chat_path) {
 }
 
 void chat_lock_release(int lock_fd) {
-    assert(lock_fd >= 0);
+    ASSERT_MSG(lock_fd >= 0, "chat_lock_release: invalid fd %d", lock_fd);
 
     struct flock fl = {
         .l_type = F_UNLCK,
