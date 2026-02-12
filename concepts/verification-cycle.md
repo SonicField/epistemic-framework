@@ -49,6 +49,58 @@ Three levels:
 
 Every assertion message answers: What was expected? What occurred? Why does it matter?
 
+## Types Are Hints, Not Guarantees
+
+Type systems are incomplete. They cannot express "this list is sorted", "this connection is authenticated", or "this balance is non-negative." A type annotation constrains the compiler's view of the code — it does not constrain reality.
+
+The danger: type systems create false confidence. "It type-checks, therefore it is correct" substitutes a noun (the type) for the verb (the check). A function that accepts `ValidatedInput` and returns `SafeOutput` has told you nothing about whether validation occurred or safety was achieved.
+
+```python
+# The noun says it is safe. Is it?
+def process(data: ValidatedInput) -> SafeOutput:
+    return transform(data)  # No verification occurred
+
+# The verb checks.
+def process(data: ValidatedInput) -> SafeOutput:
+    assert data.is_actually_validated(), \
+        f"ValidatedInput not validated: {data.source}"
+    result = transform(data)
+    assert result.meets_safety_criteria(), \
+        f"Transform produced unsafe output: {result.summary()}"
+    return result
+```
+
+Use types as documentation. Rely on assertions for correctness. The type hints intent; the assertion verifies it.
+
+## Integration-First Testing
+
+Mocks hide integration failures. A test where every dependency is mocked proves only that the mock behaves as expected — which is a tautology.
+
+The methodology:
+
+1. Write integration tests against the real system first
+2. Add targeted unit tests only for complex isolated logic
+
+What mocks hide: network latency and timeouts, concurrency and race conditions, resource contention and deadlocks, configuration mismatches, real failure modes and error messages. A clean unit test suite is not evidence of a working system.
+
+The anti-pattern:
+
+```python
+# Everything mocked — tests pass, integration fails
+@mock.patch('database')
+@mock.patch('network')
+@mock.patch('filesystem')
+def test_everything_mocked():
+    pass  # This test proves nothing about real behaviour
+
+# Test the real system
+def test_with_real_database(test_db):
+    result = service.process(test_db)
+    assert result.saved_to_db()
+```
+
+Mock at system boundaries (external APIs you do not control) and at conversion boundaries during porting (where the mock proves the ported piece matches the original before fusing). Outside these two cases, test for real.
+
 ## The Practical Question
 
 Before moving to the next step: what did I learn? Write it down. If you cannot articulate what you learned, you were not paying attention.

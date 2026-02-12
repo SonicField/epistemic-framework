@@ -43,6 +43,38 @@ Rigour compounds. So does sloppiness.
 
 A test that cannot fail is not a test. A claim that cannot be wrong is not knowledge. This principle underlies all work: code, reasoning, documents, analysis, collaboration.
 
+## Property-Based Testing
+
+Traditional tests confirm: "does it work for these examples?" Property-based testing falsifies: "can I find any input that breaks it?"
+
+The technique: define properties that must always hold, then generate many inputs to search for counterexamples. The framework (Hypothesis, QuickCheck, proptest) automates the search and shrinks failing cases to minimal reproductions.
+
+```python
+# Example-based: confirms one case
+def test_sort_example():
+    assert sort([3, 1, 2]) == [1, 2, 3]
+
+# Property-based: mechanised falsification
+from hypothesis import given, strategies as st
+
+@given(st.lists(st.integers()))
+def test_sort_properties(data):
+    result = sort(data)
+    # Property 1: output is sorted
+    assert all(result[i] <= result[i+1]
+               for i in range(len(result)-1))
+    # Property 2: output is a permutation of input
+    assert sorted(result) == sorted(data)
+    # Property 3: idempotent
+    assert sort(result) == result
+```
+
+The first test confirms one case. The second tries to falsify three properties across thousands of generated inputs. If it cannot find a counterexample, confidence is earned — not assumed.
+
+For any function, systematically generate adversarial inputs: empty inputs, boundary values (MAX_INT, MIN_INT, epsilon), type confusion (string "0" vs integer 0), resource exhaustion (very large inputs), malformed data (invalid UTF-8, truncation), and timing attacks (race conditions, reordering).
+
+Property-based testing is falsifiability automated. Use it wherever properties can be stated.
+
 ## The Practical Question
 
 Before committing to any choice, ask: what evidence would show this is the wrong choice? If you cannot answer, you do not yet understand the choice you are making.

@@ -102,6 +102,15 @@ Validation checks ordered so that earlier checks make later checks unreachable. 
 **Anti-Pattern 4: Quick Fix Trap**
 Silently returning a default value or None for unexpected conditions instead of asserting. Comments like "TODO: handle properly" are a signal.
 
+**Anti-Pattern 5: Type-System False Confidence**
+Code that relies on type annotations for safety without runtime assertions. "It type-checks, therefore it is correct" substitutes a noun (the type) for the verb (the check). Flag functions whose type signature implies guarantees (e.g. `-> ValidatedOutput`, `-> SafeResult`) without postcondition assertions verifying those guarantees.
+
+**Anti-Pattern 6: Mock-Heavy Testing**
+Tests where every dependency is mocked prove only that the mock behaves as expected. Flag test files where three or more dependencies are mocked simultaneously — this is a sign that integration tests are missing. Mocks are acceptable at true system boundaries (external APIs the project does not control) and at **conversion boundaries during porting** — when replacing code piece by piece, mocking the boundary between ported and unported code is the methodology, not a shortcut. The mock proves the ported piece is behaviourally equivalent to the original in isolation before fusing. Outside these two cases, prefer integration tests against the real system.
+
+**Anti-Pattern 7: No Runtime Verification**
+Long-running processes or services that lack health checks, invariant monitoring, or graceful degradation. Flag services or daemons that do not periodically verify internal state. Flag code that silently continues after an invariant violation rather than logging, alerting, and containing the corruption. After an invariant violation, the data is no longer trustworthy — the system must log full context, alert operators, contain the corruption, degrade to a safe mode, and recover or await intervention.
+
 ## Your Task
 
 Read the source file. Produce a concise report listing ONLY concrete violations:
