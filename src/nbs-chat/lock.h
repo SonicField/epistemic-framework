@@ -9,30 +9,39 @@
 #define NBS_LOCK_H
 
 /*
- * chat_lock_acquire — Acquire exclusive lock on chat file.
+ * chat_lock_acquire — Acquire exclusive advisory lock on chat file.
  *
- * Opens/creates the companion .lock file and acquires an exclusive lock.
- * Blocks until the lock is available.
+ * Opens/creates the companion .lock file and acquires an exclusive
+ * POSIX advisory lock via fcntl F_SETLKW. Advisory locks are cooperative;
+ * all processes must use this function for exclusion to be effective.
  *
  * Preconditions:
  *   - chat_path != NULL
- *   - chat_path is a valid path (companion .lock file will be created alongside)
+ *   - strlen(chat_path) + 6 <= MAX_PATH_LEN
+ *
+ * Postconditions (on success):
+ *   - Returned fd >= 0 with exclusive advisory lock held
+ *   - Caller MUST call chat_lock_release with the returned fd
  *
  * Returns:
- *   - File descriptor for the lock file (>= 0) on success
- *   - -1 on error
- *
- * The caller MUST call chat_lock_release with the returned fd when done.
+ *   - fd >= 0 on success (lock held)
+ *   - -1 on error (no lock held, no cleanup needed)
  */
 int chat_lock_acquire(const char *chat_path);
 
 /*
- * chat_lock_release — Release exclusive lock.
+ * chat_lock_release — Release exclusive advisory lock.
+ *
+ * Releases the POSIX advisory lock and closes the lock file descriptor.
+ * Advisory locks are automatically released on close, but we explicitly
+ * unlock first for clarity and to avoid relying on implicit behaviour.
  *
  * Preconditions:
- *   - lock_fd is a valid fd returned by chat_lock_acquire
+ *   - lock_fd >= 0 (a valid fd returned by chat_lock_acquire)
  *
- * Closes the lock file descriptor, releasing the lock.
+ * Postconditions:
+ *   - The advisory lock is released
+ *   - lock_fd is closed and must not be reused
  */
 void chat_lock_release(int lock_fd);
 

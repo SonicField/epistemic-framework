@@ -94,10 +94,16 @@ static const char *get_worker_cmd(void)
 
 int hub_init(hub_ctx *ctx, const char *project_dir, const char *goal)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
+    ASSERT_MSG(project_dir != NULL, "project_dir is NULL");
+    ASSERT_MSG(goal != NULL, "goal is NULL");
+
     /* Resolve project_dir to absolute path */
     char abs_dir[HUB_MAX_PATH];
     if (project_dir[0] == '/') {
-        snprintf(abs_dir, sizeof(abs_dir), "%s", project_dir);
+        int n_abs = snprintf(abs_dir, sizeof(abs_dir), "%s", project_dir);
+        ASSERT_MSG(n_abs > 0 && n_abs < (int)sizeof(abs_dir),
+                   "path overflow resolving project_dir");
     } else {
         char cwd[HUB_MAX_PATH];
         ASSERT_MSG(getcwd(cwd, sizeof(cwd)) != NULL, "getcwd failed");
@@ -133,12 +139,24 @@ int hub_init(hub_ctx *ctx, const char *project_dir, const char *goal)
     /* Write manifest */
     hub_manifest *m = &ctx->manifest;
     memset(m, 0, sizeof(*m));
-    snprintf(m->project_dir, sizeof(m->project_dir), "%s", abs_dir);
-    snprintf(m->terminal_goal, sizeof(m->terminal_goal), "%s", goal);
+    {
+        int n_pd = snprintf(m->project_dir, sizeof(m->project_dir), "%s", abs_dir);
+        ASSERT_MSG(n_pd > 0 && n_pd < (int)sizeof(m->project_dir),
+                   "path overflow writing project_dir to manifest");
+    }
+    {
+        int n_tg = snprintf(m->terminal_goal, sizeof(m->terminal_goal), "%s", goal);
+        ASSERT_MSG(n_tg > 0 && n_tg < (int)sizeof(m->terminal_goal),
+                   "path overflow writing terminal_goal to manifest");
+    }
     n = snprintf(m->workers_dir, sizeof(m->workers_dir),
                  "%s/.nbs/workers", abs_dir);
     ASSERT_MSG(n > 0 && n < (int)sizeof(m->workers_dir), "path overflow");
-    snprintf(m->hub_dir, sizeof(m->hub_dir), "%s", ctx->hub_dir);
+    {
+        int n_hd = snprintf(m->hub_dir, sizeof(m->hub_dir), "%s", ctx->hub_dir);
+        ASSERT_MSG(n_hd > 0 && n_hd < (int)sizeof(m->hub_dir),
+                   "path overflow writing hub_dir to manifest");
+    }
 
     if (hub_save_manifest(ctx) != 0) return -1;
 
@@ -171,6 +189,8 @@ int hub_init(hub_ctx *ctx, const char *project_dir, const char *goal)
 
 int hub_status(hub_ctx *ctx)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
+
     hub_manifest *m = &ctx->manifest;
     hub_state *s = &ctx->state;
 
@@ -216,6 +236,8 @@ int hub_status(hub_ctx *ctx)
     if (hub_log_open(ctx) == 0) {
         hub_log_show(ctx, 10);
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — recent log not shown\n");
     }
 
     return 0;
@@ -225,6 +247,9 @@ int hub_status(hub_ctx *ctx)
 
 int hub_spawn(hub_ctx *ctx, int argc, char **argv)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
+    ASSERT_MSG(argv != NULL, "argv is NULL");
+
     if (argc < 2) {
         fprintf(stderr, "Usage: nbs-hub spawn <slug> <task-description>\n");
         return 4;
@@ -250,6 +275,8 @@ int hub_spawn(hub_ctx *ctx, int argc, char **argv)
                          "workers-since-check=%d",
                          slug, ctx->state.workers_since_check);
             hub_log_close(ctx);
+        } else {
+            fprintf(stderr, "warning: hub log unavailable — spawn refusal not logged\n");
         }
         return 3;
     }
@@ -284,6 +311,8 @@ int hub_spawn(hub_ctx *ctx, int argc, char **argv)
         hub_log_write(ctx, "SPAWN worker=%s task=\"%s\"", output, task);
         hub_chat_log(ctx, "spawn worker=%s task=\"%s\"", output, task);
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — spawn not logged\n");
     }
 
     printf("Spawned: %s\n", output);
@@ -294,6 +323,7 @@ int hub_spawn(hub_ctx *ctx, int argc, char **argv)
 
 int hub_check(hub_ctx *ctx, const char *worker_name)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(worker_name != NULL, "worker_name is NULL");
     (void)ctx;
 
@@ -306,6 +336,7 @@ int hub_check(hub_ctx *ctx, const char *worker_name)
 
 int hub_result(hub_ctx *ctx, const char *worker_name)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(worker_name != NULL, "worker_name is NULL");
 
     const char *worker_cmd = get_worker_cmd();
@@ -313,11 +344,13 @@ int hub_result(hub_ctx *ctx, const char *worker_name)
     char output[HUB_MAX_LINE * 10];
     int rc = run_capture(output, sizeof(output), worker_cmd, argv);
 
-    if (rc == 0) {
-        printf("%s", output);
+    if (rc != 0) {
+        fprintf(stderr, "warning: hub_result: worker results failed (exit %d) — state not updated\n", rc);
+        return rc;
     }
+    printf("%s", output);
 
-    /* Update counters */
+    /* Update counters only on successful result */
     ctx->state.workers_completed++;
     ctx->state.workers_since_check++;
 
@@ -345,15 +378,18 @@ int hub_result(hub_ctx *ctx, const char *worker_name)
                          ctx->state.workers_since_check);
         }
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — result not logged\n");
     }
 
-    return rc;
+    return 0;
 }
 
 /* ── hub dismiss ──────────────────────────────────────────────── */
 
 int hub_dismiss(hub_ctx *ctx, const char *worker_name)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(worker_name != NULL, "worker_name is NULL");
 
     const char *worker_cmd = get_worker_cmd();
@@ -363,6 +399,8 @@ int hub_dismiss(hub_ctx *ctx, const char *worker_name)
     if (rc == 0 && hub_log_open(ctx) == 0) {
         hub_log_write(ctx, "DISMISS worker=%s", worker_name);
         hub_log_close(ctx);
+    } else if (rc == 0) {
+        fprintf(stderr, "warning: hub log unavailable — dismiss not logged\n");
     }
 
     return rc;
@@ -372,6 +410,7 @@ int hub_dismiss(hub_ctx *ctx, const char *worker_name)
 
 int hub_list(hub_ctx *ctx)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     (void)ctx;
     const char *worker_cmd = get_worker_cmd();
     char *argv[] = { (char *)worker_cmd, "list", NULL };
@@ -382,6 +421,7 @@ int hub_list(hub_ctx *ctx)
 
 int hub_audit(hub_ctx *ctx, const char *audit_file)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(audit_file != NULL, "audit_file is NULL");
 
     /* Validate file exists and is non-empty */
@@ -435,16 +475,31 @@ int hub_audit(hub_ctx *ctx, const char *audit_file)
 
     /* Copy file to archive */
     FILE *src = fopen(audit_file, "r");
+    if (!src) {
+        fprintf(stderr, "error: cannot read audit file for archive: %s\n", strerror(errno));
+        return 1;
+    }
     FILE *dst = fopen(archive_path, "w");
-    if (src && dst) {
-        char buf[4096];
-        size_t nr;
-        while ((nr = fread(buf, 1, sizeof(buf), src)) > 0) {
-            fwrite(buf, 1, nr, dst);
+    if (!dst) {
+        fprintf(stderr, "error: cannot create archive: %s\n", strerror(errno));
+        fclose(src);
+        return 1;
+    }
+    char buf[4096];
+    size_t nr;
+    while ((nr = fread(buf, 1, sizeof(buf), src)) > 0) {
+        if (fwrite(buf, 1, nr, dst) != nr) {
+            fprintf(stderr, "error: archive write failed: %s\n", strerror(errno));
+            fclose(src);
+            fclose(dst);
+            return 1;
         }
     }
-    if (src) fclose(src);
-    if (dst) fclose(dst);
+    fclose(src);
+    if (fclose(dst) != 0) {
+        fprintf(stderr, "error: archive close failed: %s\n", strerror(errno));
+        return 1;
+    }
 
     /* Reset counters */
     ctx->state.workers_since_check = 0;
@@ -459,6 +514,8 @@ int hub_audit(hub_ctx *ctx, const char *audit_file)
         hub_log_write(ctx, "COUNTER workers_since_check=0");
         hub_chat_log(ctx, "audit-accepted file=%s", audit_file);
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — audit not logged\n");
     }
 
     printf("Audit accepted.\n");
@@ -473,6 +530,9 @@ int hub_audit(hub_ctx *ctx, const char *audit_file)
 
 int hub_gate(hub_ctx *ctx, int argc, char **argv)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
+    ASSERT_MSG(argv != NULL, "argv is NULL");
+
     if (argc < 3) {
         fprintf(stderr, "Usage: nbs-hub gate <phase-name> <test-results> <audit-file>\n");
         return 4;
@@ -512,12 +572,17 @@ int hub_gate(hub_ctx *ctx, int argc, char **argv)
     ASSERT_MSG(n > 0 && n < (int)sizeof(gate_path), "path overflow");
 
     FILE *gf = fopen(gate_path, "w");
-    if (gf) {
-        fprintf(gf, "# Phase %d Gate: %s\n\n", ctx->state.phase, phase_name);
-        fprintf(gf, "Passed: %s\n", format_time(time(NULL)));
-        fprintf(gf, "Test results: %s\n", test_file);
-        fprintf(gf, "Audit file: %s\n", audit_file);
-        fclose(gf);
+    if (!gf) {
+        fprintf(stderr, "error: cannot write gate record: %s\n", strerror(errno));
+        return 1;
+    }
+    fprintf(gf, "# Phase %d Gate: %s\n\n", ctx->state.phase, phase_name);
+    fprintf(gf, "Passed: %s\n", format_time(time(NULL)));
+    fprintf(gf, "Test results: %s\n", test_file);
+    fprintf(gf, "Audit file: %s\n", audit_file);
+    if (fclose(gf) != 0) {
+        fprintf(stderr, "error: gate record write failed: %s\n", strerror(errno));
+        return 1;
     }
 
     /* Advance phase */
@@ -541,6 +606,8 @@ int hub_gate(hub_ctx *ctx, int argc, char **argv)
         hub_chat_log(ctx, "gate-passed phase=%d name=\"%s\"",
                      old_phase, phase_name);
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — gate passage not logged\n");
     }
 
     printf("Phase %d (%s) complete.\n", old_phase, phase_name);
@@ -554,6 +621,8 @@ int hub_gate(hub_ctx *ctx, int argc, char **argv)
 
 int hub_phase(hub_ctx *ctx)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
+
     printf("Phase:    %d — %s\n", ctx->state.phase, ctx->state.phase_name);
     if (ctx->state.phase_gate_criteria[0])
         printf("Gate:     %s\n", ctx->state.phase_gate_criteria);
@@ -567,6 +636,8 @@ int hub_phase(hub_ctx *ctx)
 
 int hub_doc_list(hub_ctx *ctx)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
+
     hub_manifest *m = &ctx->manifest;
 
     if (m->doc_count == 0) {
@@ -592,6 +663,7 @@ int hub_doc_list(hub_ctx *ctx)
 
 int hub_doc_read(hub_ctx *ctx, const char *name)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(name != NULL, "doc name is NULL");
 
     hub_manifest *m = &ctx->manifest;
@@ -635,6 +707,7 @@ int hub_doc_read(hub_ctx *ctx, const char *name)
 
 int hub_doc_register(hub_ctx *ctx, const char *name, const char *path)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(name != NULL, "doc name is NULL");
     ASSERT_MSG(path != NULL, "doc path is NULL");
 
@@ -643,7 +716,9 @@ int hub_doc_register(hub_ctx *ctx, const char *name, const char *path)
     /* Resolve to absolute path */
     char abs_path[HUB_MAX_PATH];
     if (path[0] == '/') {
-        snprintf(abs_path, sizeof(abs_path), "%s", path);
+        int n_p = snprintf(abs_path, sizeof(abs_path), "%s", path);
+        ASSERT_MSG(n_p > 0 && n_p < (int)sizeof(abs_path),
+                   "path overflow resolving absolute doc path");
     } else {
         char *r = realpath(path, abs_path);
         if (!r) {
@@ -658,12 +733,17 @@ int hub_doc_register(hub_ctx *ctx, const char *name, const char *path)
     /* Check if already registered — update path if so */
     for (int i = 0; i < m->doc_count; i++) {
         if (strcmp(m->docs[i].name, name) == 0) {
-            snprintf(m->docs[i].path, sizeof(m->docs[i].path), "%s", abs_path);
+            int n_up = snprintf(m->docs[i].path, sizeof(m->docs[i].path),
+                                "%s", abs_path);
+            ASSERT_MSG(n_up > 0 && n_up < (int)sizeof(m->docs[i].path),
+                       "path overflow updating doc path");
             if (hub_save_manifest(ctx) != 0) return -1;
 
             if (hub_log_open(ctx) == 0) {
                 hub_log_write(ctx, "DOC_UPDATE name=%s path=%s", name, abs_path);
                 hub_log_close(ctx);
+            } else {
+                fprintf(stderr, "warning: hub log unavailable — doc update not logged\n");
             }
 
             printf("Updated: %s → %s\n", name, abs_path);
@@ -676,8 +756,16 @@ int hub_doc_register(hub_ctx *ctx, const char *name, const char *path)
                "too many docs: %d >= %d", m->doc_count, HUB_MAX_DOCS);
 
     hub_doc_entry *e = &m->docs[m->doc_count];
-    snprintf(e->name, sizeof(e->name), "%s", name);
-    snprintf(e->path, sizeof(e->path), "%s", abs_path);
+    {
+        int n_en = snprintf(e->name, sizeof(e->name), "%s", name);
+        ASSERT_MSG(n_en > 0 && n_en < (int)sizeof(e->name),
+                   "name overflow registering doc");
+    }
+    {
+        int n_ep = snprintf(e->path, sizeof(e->path), "%s", abs_path);
+        ASSERT_MSG(n_ep > 0 && n_ep < (int)sizeof(e->path),
+                   "path overflow registering doc");
+    }
     m->doc_count++;
 
     if (hub_save_manifest(ctx) != 0) return -1;
@@ -685,6 +773,8 @@ int hub_doc_register(hub_ctx *ctx, const char *name, const char *path)
     if (hub_log_open(ctx) == 0) {
         hub_log_write(ctx, "DOC_REGISTER name=%s path=%s", name, abs_path);
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — doc registration not logged\n");
     }
 
     printf("Registered: %s → %s\n", name, abs_path);
@@ -695,6 +785,7 @@ int hub_doc_register(hub_ctx *ctx, const char *name, const char *path)
 
 int hub_decision(hub_ctx *ctx, const char *text)
 {
+    ASSERT_MSG(ctx != NULL, "hub context is NULL");
     ASSERT_MSG(text != NULL, "decision text is NULL");
 
     /* Append to decisions.log if registered, else to hub.log */
@@ -702,6 +793,8 @@ int hub_decision(hub_ctx *ctx, const char *text)
         hub_log_write(ctx, "DECISION %s", text);
         hub_chat_log(ctx, "decision \"%s\"", text);
         hub_log_close(ctx);
+    } else {
+        fprintf(stderr, "warning: hub log unavailable — decision not logged\n");
     }
 
     printf("Decision recorded.\n");

@@ -112,6 +112,7 @@ static int get_terminal_width(void) {
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
         return ws.ws_col;
     }
+    /* Fallback: terminal size detection failed — default to 80 columns */
     return 80;
 }
 
@@ -232,6 +233,9 @@ static void line_redraw(const line_state_t *ls, const char *handle) {
                "line_redraw: cursor %zu > len %zu", ls->cursor, ls->len);
 
     int tw = get_terminal_width();
+    ASSERT_MSG(tw > 0,
+               "line_redraw: terminal width must be positive, got %d"
+               " — ioctl failure or invalid terminal", tw);
     int prompt_vlen = (int)strlen(handle) + 2;  /* visible: "handle> " */
 
     /* Move cursor up to the first row of the input area */
@@ -358,18 +362,22 @@ static void line_delete_forward(line_state_t *ls) {
 }
 
 static void line_move_left(line_state_t *ls) {
+    ASSERT_MSG(ls != NULL, "line_move_left: ls is NULL");
     if (ls->cursor > 0) ls->cursor--;
 }
 
 static void line_move_right(line_state_t *ls) {
+    ASSERT_MSG(ls != NULL, "line_move_right: ls is NULL");
     if (ls->cursor < ls->len) ls->cursor++;
 }
 
 static void line_move_home(line_state_t *ls) {
+    ASSERT_MSG(ls != NULL, "line_move_home: ls is NULL");
     ls->cursor = 0;
 }
 
 static void line_move_end(line_state_t *ls) {
+    ASSERT_MSG(ls != NULL, "line_move_end: ls is NULL");
     ls->cursor = ls->len;
 }
 
@@ -408,6 +416,11 @@ static int handle_escape_input(line_state_t *ls, esc_parser_t *esc,
         /* Accumulate numeric parameter */
         if (c >= '0' && c <= '9') {
             if (esc->param < 0) esc->param = 0;
+            if (esc->param > 9999) {
+                /* Reject unreasonably large escape parameters */
+                esc->state = ESC_NONE;
+                return 1;
+            }
             esc->param = esc->param * 10 + (c - '0');
             return 1;
         }
@@ -555,10 +568,13 @@ static char *open_editor(void) {
     if (pid == 0) {
         /* Child: run editor with /dev/tty */
         int tty = open("/dev/tty", O_RDONLY);
-        if (tty >= 0) {
-            dup2(tty, STDIN_FILENO);
-            close(tty);
+        if (tty < 0) {
+            fprintf(stderr, "error: cannot open /dev/tty for editor: %s\n",
+                    strerror(errno));
+            _exit(1);
         }
+        dup2(tty, STDIN_FILENO);
+        close(tty);
         execlp(editor, editor, tmppath, (char *)NULL);
         _exit(127);
     }
@@ -581,9 +597,15 @@ static char *open_editor(void) {
 
     fseek(f, 0, SEEK_END);
     long len = ftell(f);
+    if (len < 0) {
+        /* ftell failed — cannot determine file size */
+        fclose(f);
+        unlink(tmppath);
+        return NULL;
+    }
     fseek(f, 0, SEEK_SET);
 
-    if (len <= 0) {
+    if (len == 0) {
         fclose(f);
         unlink(tmppath);
         return NULL;
@@ -597,6 +619,13 @@ static char *open_editor(void) {
     }
 
     size_t nread = fread(content, 1, len, f);
+    if (nread == 0 && ferror(f)) {
+        /* Read error — no data recovered */
+        free(content);
+        fclose(f);
+        unlink(tmppath);
+        return NULL;
+    }
     content[nread] = '\0';
     fclose(f);
     unlink(tmppath);

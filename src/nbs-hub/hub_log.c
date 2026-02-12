@@ -16,6 +16,8 @@
 
 int hub_log_open(hub_ctx *ctx)
 {
+    ASSERT_MSG(ctx != NULL, "hub_log_open: ctx is NULL — caller must provide valid hub context");
+
     char path[HUB_MAX_PATH];
     int n = snprintf(path, sizeof(path), "%s/hub.log", ctx->hub_dir);
     ASSERT_MSG(n > 0 && n < (int)sizeof(path), "path overflow");
@@ -30,6 +32,8 @@ int hub_log_open(hub_ctx *ctx)
 
 void hub_log_close(hub_ctx *ctx)
 {
+    ASSERT_MSG(ctx != NULL, "hub_log_close: ctx is NULL");
+
     if (ctx->log_fd >= 0) {
         close(ctx->log_fd);
         ctx->log_fd = -1;
@@ -38,6 +42,8 @@ void hub_log_close(hub_ctx *ctx)
 
 void hub_log_write(hub_ctx *ctx, const char *fmt, ...)
 {
+    ASSERT_MSG(ctx != NULL, "hub_log_write: ctx is NULL");
+    ASSERT_MSG(fmt != NULL, "hub_log_write: format string is NULL");
     ASSERT_MSG(ctx->log_fd >= 0, "hub_log_write: log not open");
 
     char msg[HUB_MAX_LINE];
@@ -59,11 +65,17 @@ void hub_log_write(hub_ctx *ctx, const char *fmt, ...)
     ssize_t written = write(ctx->log_fd, entry, (size_t)elen);
     if (written < 0) {
         fprintf(stderr, "warning: hub.log write failed: %s\n", strerror(errno));
+    } else if (written < elen) {
+        fprintf(stderr, "warning: hub.log partial write: %zd of %d bytes\n",
+                written, elen);
     }
 }
 
 int hub_log_show(hub_ctx *ctx, int n)
 {
+    ASSERT_MSG(ctx != NULL, "hub_log_show: ctx is NULL");
+    ASSERT_MSG(n >= 0, "hub_log_show: n must be non-negative, got %d", n);
+
     char path[HUB_MAX_PATH];
     int pn = snprintf(path, sizeof(path), "%s/hub.log", ctx->hub_dir);
     ASSERT_MSG(pn > 0 && pn < (int)sizeof(path), "path overflow");
@@ -74,12 +86,18 @@ int hub_log_show(hub_ctx *ctx, int n)
         return -1;
     }
 
-    /* Read all lines into a buffer, then print the last N */
-    char *lines[10000];
+    /* Heap-allocate the line pointer array to avoid 80KB stack usage */
+    #define MAX_LOG_LINES 10000
+    char **lines = malloc(sizeof(char *) * MAX_LOG_LINES);
+    if (!lines) {
+        fprintf(stderr, "error: hub_log_show: malloc failed for line pointers\n");
+        fclose(fp);
+        return -1;
+    }
     int count = 0;
     char line[HUB_MAX_LINE];
 
-    while (fgets(line, sizeof(line), fp) && count < 10000) {
+    while (fgets(line, sizeof(line), fp) && count < MAX_LOG_LINES) {
         lines[count] = strdup(line);
         ASSERT_MSG(lines[count] != NULL, "strdup failed");
         count++;
@@ -97,12 +115,17 @@ int hub_log_show(hub_ctx *ctx, int n)
     for (int i = 0; i < count; i++) {
         free(lines[i]);
     }
+    free(lines);
+    #undef MAX_LOG_LINES
 
     return 0;
 }
 
 void hub_chat_log(hub_ctx *ctx, const char *fmt, ...)
 {
+    ASSERT_MSG(ctx != NULL, "hub_chat_log: ctx is NULL");
+    ASSERT_MSG(fmt != NULL, "hub_chat_log: format string is NULL");
+
     /* Only log if chat file exists */
     if (access(ctx->chat_path, F_OK) != 0) return;
 

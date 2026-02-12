@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,9 +18,31 @@
 
 /* --- Internal helpers --- */
 
+/* Safe integer parse — returns 0 on success, -1 on error */
+static int safe_parse_int(const char *str, int *out) {
+    char *endptr;
+    errno = 0;
+    long val = strtol(str, &endptr, 10);
+    if (errno != 0 || endptr == str || (*endptr != '\0' && *endptr != '\n' && *endptr != '\r')) return -1;
+    if (val < INT_MIN || val > INT_MAX) return -1;
+    *out = (int)val;
+    return 0;
+}
+
+static int safe_parse_long(const char *str, long *out) {
+    char *endptr;
+    errno = 0;
+    long val = strtol(str, &endptr, 10);
+    if (errno != 0 || endptr == str || (*endptr != '\0' && *endptr != '\n' && *endptr != '\r')) return -1;
+    *out = val;
+    return 0;
+}
+
 static void get_timestamp(char *buf, size_t buf_size) {
     time_t now = time(NULL);
+    ASSERT_MSG(now != (time_t)-1, "get_timestamp: time() failed");
     struct tm *tm = localtime(&now);
+    ASSERT_MSG(tm != NULL, "get_timestamp: localtime() returned NULL for time %ld", (long)now);
     strftime(buf, buf_size, "%Y-%m-%dT%H:%M:%S%z", tm);
 }
 
@@ -73,8 +96,19 @@ static int parse_participants(const char *line, participant_t *parts, int max_pa
         parts[count].count = 0;
         if (*p == '(') {
             p++; /* skip ( */
-            parts[count].count = atoi(p);
+            /* Extract numeric substring up to ')' for safe parsing */
+            const char *num_start = p;
             while (*p && *p != ')') p++;
+            size_t num_len = p - num_start;
+            if (num_len > 0 && num_len < 16) {
+                char num_buf[16];
+                memcpy(num_buf, num_start, num_len);
+                num_buf[num_len] = '\0';
+                int parsed_count;
+                if (safe_parse_int(num_buf, &parsed_count) == 0) {
+                    parts[count].count = parsed_count;
+                }
+            }
             if (*p == ')') p++;
         }
 
@@ -155,14 +189,18 @@ int chat_create(const char *path) {
     fprintf(f, "file-length: %ld\n", file_len);
     fprintf(f, "participants: \n");
     fprintf(f, "---\n");
-    fclose(f);
+    if (fclose(f) != 0) {
+        fprintf(stderr, "warning: chat_create: fclose failed: %s\n", strerror(errno));
+        return -2;
+    }
 
     /* Postcondition: verify file-length matches actual size */
-    if (stat(path, &st) == 0) {
-        ASSERT_MSG(st.st_size == file_len,
-                   "chat_create postcondition: file-length header %ld != actual size %ld",
-                   file_len, (long)st.st_size);
-    }
+    int stat_rc = stat(path, &st);
+    ASSERT_MSG(stat_rc == 0,
+               "chat_create: stat failed after write: %s", strerror(errno));
+    ASSERT_MSG(st.st_size == file_len,
+               "chat_create postcondition: file-length header %ld != actual size %ld",
+               file_len, (long)st.st_size);
 
     return 0;
 }
@@ -215,7 +253,9 @@ int chat_read(const char *path, chat_state_t *state) {
                 snprintf(state->last_write, sizeof(state->last_write), "%.*s",
                          (int)(sizeof(state->last_write) - 1), line + 12);
             } else if (strncmp(line, "file-length: ", 13) == 0) {
-                state->file_length = atol(line + 13);
+                if (safe_parse_long(line + 13, &state->file_length) != 0) {
+                    fprintf(stderr, "warning: chat_read: invalid file-length value: %s\n", line + 13);
+                }
             } else if (strncmp(line, "participants: ", 14) == 0) {
                 state->participant_count = parse_participants(
                     line + 14, state->participants, MAX_PARTICIPANTS);
@@ -227,7 +267,10 @@ int chat_read(const char *path, chat_state_t *state) {
             /* Decode base64 message */
             size_t decoded_max = base64_decoded_size(len);
             unsigned char *decoded = malloc(decoded_max + 1);
-            if (!decoded) continue;
+            if (!decoded) {
+                fprintf(stderr, "warning: chat_read: malloc failed for message %d, skipping\n", state->message_count);
+                continue;
+            }
 
             int decoded_len = base64_decode(line, len, decoded, decoded_max);
             if (decoded_len < 0) {
@@ -245,6 +288,11 @@ int chat_read(const char *path, chat_state_t *state) {
                     strncpy(msg->handle, (char *)decoded, handle_len);
                     msg->handle[handle_len] = '\0';
                     msg->content = strdup(colon + 2);
+                    if (!msg->content) {
+                        fprintf(stderr, "warning: chat_read: strdup failed for message %d\n", state->message_count);
+                        free(decoded);
+                        continue;
+                    }
                     msg->content_len = decoded_len - handle_len - 2;
                     state->message_count++;
                 }
@@ -363,9 +411,13 @@ int chat_send(const char *path, const char *handle, const char *message) {
         }
 
         if (ll > 0) {
-            encoded_lines = realloc(encoded_lines,
+            char **tmp = realloc(encoded_lines,
                                      sizeof(char *) * (encoded_line_count + 1));
+            ASSERT_MSG(tmp != NULL, "chat_send: realloc failed for %d encoded lines", encoded_line_count + 1);
+            encoded_lines = tmp;
             encoded_lines[encoded_line_count] = strdup(line_buf);
+            ASSERT_MSG(encoded_lines[encoded_line_count] != NULL,
+                       "chat_send: strdup failed for encoded line %d", encoded_line_count);
             encoded_line_count++;
         }
     }
@@ -431,15 +483,25 @@ int chat_send(const char *path, const char *handle, const char *message) {
         fprintf(f, "%s\n", encoded_lines[i]);
     }
     fprintf(f, "%s\n", encoded);
-    fclose(f);
+    if (fclose(f) != 0) {
+        fprintf(stderr, "warning: chat_send: fclose failed: %s\n", strerror(errno));
+        free(content_no_fl);
+        for (int i = 0; i < encoded_line_count; i++) free(encoded_lines[i]);
+        free(encoded_lines);
+        free(encoded);
+        chat_state_free(&state);
+        chat_lock_release(lock_fd);
+        return -2;
+    }
 
     /* Postcondition: verify file-length matches actual size */
     struct stat st;
-    if (stat(path, &st) == 0) {
-        ASSERT_MSG(st.st_size == file_len,
-                   "chat_send postcondition: file-length header %ld != actual size %ld",
-                   file_len, (long)st.st_size);
-    }
+    int stat_rc = stat(path, &st);
+    ASSERT_MSG(stat_rc == 0,
+               "chat_send: stat failed after write: %s", strerror(errno));
+    ASSERT_MSG(st.st_size == file_len,
+               "chat_send postcondition: file-length header %ld != actual size %ld",
+               file_len, (long)st.st_size);
 
     /* Cleanup */
     free(content_no_fl);
@@ -535,7 +597,10 @@ int chat_cursor_read(const char *chat_path, const char *handle) {
         key[klen] = '\0';
 
         if (strcmp(key, handle) == 0) {
-            result = atoi(eq + 1);
+            if (safe_parse_int(eq + 1, &result) != 0) {
+                fprintf(stderr, "warning: chat_cursor_read: invalid cursor value for handle '%s'\n", handle);
+                result = -1;
+            }
             break;
         }
     }
@@ -556,6 +621,10 @@ int chat_cursor_write(const char *chat_path, const char *handle, int index) {
     char lock_path[MAX_PATH_LEN];
     snprintf(lock_path, sizeof(lock_path), "%s.lock", chat_path);
     int lock_fd = chat_lock_acquire(lock_path);
+    if (lock_fd < 0) {
+        fprintf(stderr, "warning: chat_cursor_write: lock acquisition failed for %s\n", lock_path);
+        return -1;
+    }
 
     /* Read existing cursors */
     char handles[MAX_PARTICIPANTS][MAX_HANDLE_LEN];
@@ -577,7 +646,10 @@ int chat_cursor_write(const char *chat_path, const char *handle, int index) {
 
             memcpy(handles[count], line, klen);
             handles[count][klen] = '\0';
-            indices[count] = atoi(eq + 1);
+            if (safe_parse_int(eq + 1, &indices[count]) != 0) {
+                fprintf(stderr, "warning: chat_cursor_write: invalid cursor value, defaulting to 0\n");
+                indices[count] = 0;
+            }
 
             if (strcmp(handles[count], handle) == 0) {
                 indices[count] = index;  /* Update existing */
@@ -609,7 +681,12 @@ int chat_cursor_write(const char *chat_path, const char *handle, int index) {
     for (int i = 0; i < count; i++) {
         fprintf(f, "%s=%d\n", handles[i], indices[i]);
     }
-    fclose(f);
+    if (fclose(f) != 0) {
+        fprintf(stderr, "warning: chat_cursor_write: fclose failed: %s\n", strerror(errno));
+        unlink(tmp_path);
+        chat_lock_release(lock_fd);
+        return -1;
+    }
 
     if (rename(tmp_path, cpath) != 0) {
         unlink(tmp_path);

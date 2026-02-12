@@ -9,6 +9,9 @@
 #define NBS_BASE64_H
 
 #include <stddef.h>
+#include <stdint.h>
+#include <limits.h>
+#include "chat_file.h"
 
 /*
  * base64_encode — Encode binary data to base64 string.
@@ -44,12 +47,22 @@ int base64_decode(const char *input, size_t input_len,
 
 /*
  * Size calculation helpers.
+ *
+ * Precondition: input_len must not cause arithmetic overflow.
+ * The maximum safe input_len for encoding is (SIZE_MAX - 4) / 4 * 3,
+ * which ensures (input_len + 2) / 3 * 4 + 1 does not wrap.
  */
 static inline size_t base64_encoded_size(size_t input_len) {
+    ASSERT_MSG(input_len <= (SIZE_MAX - 4) / 4 * 3,
+               "base64_encoded_size: input_len %zu would cause arithmetic "
+               "overflow in size calculation", input_len);
     return ((input_len + 2) / 3) * 4 + 1; /* +1 for null terminator */
 }
 
 static inline size_t base64_decoded_size(size_t input_len) {
+    ASSERT_MSG(input_len <= SIZE_MAX - 3,
+               "base64_decoded_size: input_len %zu would cause arithmetic "
+               "overflow in size calculation", input_len);
     return (input_len / 4) * 3 + 3; /* conservative upper bound */
 }
 

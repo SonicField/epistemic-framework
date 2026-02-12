@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "hub_state.h"
 #include "hub_commands.h"
@@ -18,6 +20,9 @@
 
 int main(int argc, char *argv[])
 {
+    ASSERT_MSG(argc >= 1, "main: argc must be at least 1, got %d", argc);
+    ASSERT_MSG(argv != NULL, "main: argv is NULL");
+
     if (argc < 2) {
         hub_help();
         return 0;
@@ -57,6 +62,8 @@ int main(int argc, char *argv[])
     const char *search_dir = project_override ? project_override : ".";
     int rc = hub_discover(&ctx, search_dir);
     if (rc != 0) return rc;
+    ASSERT_MSG(ctx.hub_dir[0] != '\0',
+               "hub_discover returned 0 but hub_dir is empty — state corruption");
 
     if (strcmp(cmd, "status") == 0)
         return hub_status(&ctx);
@@ -107,9 +114,21 @@ int main(int argc, char *argv[])
 
     if (strcmp(cmd, "log") == 0) {
         int n = 20;
-        if (argc - arg_start >= 2)
-            n = atoi(argv[arg_start + 1]);
-        if (hub_log_open(&ctx) != 0) return 1;
+        if (argc - arg_start >= 2) {
+            char *endptr;
+            errno = 0;
+            long val = strtol(argv[arg_start + 1], &endptr, 10);
+            if (errno != 0 || *endptr != '\0' || val < 0 || val > INT_MAX) {
+                fprintf(stderr, "Error: Invalid log count: %s\n",
+                        argv[arg_start + 1]);
+                return 4;
+            }
+            n = (int)val;
+        }
+        if (hub_log_open(&ctx) != 0) {
+            fprintf(stderr, "error: cannot open hub log\n");
+            return 1;
+        }
         rc = hub_log_show(&ctx, n);
         hub_log_close(&ctx);
         return rc;

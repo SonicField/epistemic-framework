@@ -21,6 +21,8 @@
 
 #include "chat_file.h"
 #include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,16 +62,17 @@ static int cmd_create(int argc, char **argv) {
     const char *path = argv[2];
 
     /* Precondition: path validated from argv */
-    ASSERT_MSG(path != NULL, "cmd_create: path is NULL after argv extraction");
+    ASSERT_MSG(path != NULL, "cmd_create: path argument is NULL after argv extraction — this indicates an internal argument parsing error");
 
     /* Resolve to absolute path */
     char abs_path[MAX_PATH_LEN * 2];
     if (path[0] != '/') {
         char cwd[MAX_PATH_LEN];
-        if (getcwd(cwd, sizeof(cwd))) {
-            snprintf(abs_path, sizeof(abs_path), "%s/%s", cwd, path);
-            path = abs_path;
-        }
+        char *cwdp = getcwd(cwd, sizeof(cwd));
+        ASSERT_MSG(cwdp != NULL, "cmd_create: getcwd failed: %s — cannot resolve relative path '%s'",
+                   strerror(errno), path);
+        snprintf(abs_path, sizeof(abs_path), "%s/%s", cwd, path);
+        path = abs_path;
     }
 
     int result = chat_create(path);
@@ -97,9 +100,9 @@ static int cmd_send(int argc, char **argv) {
     const char *message = argv[4];
 
     /* Preconditions: args validated from argv */
-    ASSERT_MSG(path != NULL, "cmd_send: path is NULL");
-    ASSERT_MSG(handle != NULL, "cmd_send: handle is NULL");
-    ASSERT_MSG(message != NULL, "cmd_send: message is NULL");
+    ASSERT_MSG(path != NULL, "cmd_send: path argument is NULL after argv extraction — this indicates an internal argument parsing error");
+    ASSERT_MSG(handle != NULL, "cmd_send: handle argument is NULL after argv extraction — this indicates an internal argument parsing error");
+    ASSERT_MSG(message != NULL, "cmd_send: message argument is NULL after argv extraction — this indicates an internal argument parsing error");
 
     /* Check file exists */
     FILE *f = fopen(path, "r");
@@ -127,7 +130,7 @@ static int cmd_read(int argc, char **argv) {
     const char *path = argv[2];
 
     /* Precondition: path validated from argv */
-    ASSERT_MSG(path != NULL, "cmd_read: path is NULL");
+    ASSERT_MSG(path != NULL, "cmd_read: path argument is NULL after argv extraction — this indicates an internal argument parsing error");
 
     int last_n = -1;
     const char *since_handle = NULL;
@@ -136,11 +139,20 @@ static int cmd_read(int argc, char **argv) {
     /* Parse options */
     for (int i = 3; i < argc; i++) {
         if (strncmp(argv[i], "--last=", 7) == 0) {
-            last_n = atoi(argv[i] + 7);
+            char *endptr;
+            errno = 0;
+            long val = strtol(argv[i] + 7, &endptr, 10);
+            if (errno != 0 || *endptr != '\0' || val < 0 || val > INT_MAX) {
+                fprintf(stderr, "Error: Invalid --last value: %s\n", argv[i] + 7);
+                return 4;
+            }
+            last_n = (int)val;
         } else if (strncmp(argv[i], "--since=", 8) == 0) {
             since_handle = argv[i] + 8;
         } else if (strncmp(argv[i], "--unread=", 9) == 0) {
             unread_handle = argv[i] + 9;
+        } else {
+            fprintf(stderr, "Warning: Unknown option: %s\n", argv[i]);
         }
     }
 
@@ -192,7 +204,10 @@ static int cmd_read(int argc, char **argv) {
 
     /* Advance read cursor after displaying */
     if (unread_handle && end > 0) {
-        chat_cursor_write(path, unread_handle, end - 1);
+        int cw_rc = chat_cursor_write(path, unread_handle, end - 1);
+        if (cw_rc < 0) {
+            fprintf(stderr, "warning: failed to update read cursor for '%s'\n", unread_handle);
+        }
     }
 
     chat_state_free(&state);
@@ -209,14 +224,23 @@ static int cmd_poll(int argc, char **argv) {
     const char *handle = argv[3];
 
     /* Preconditions: args validated from argv */
-    ASSERT_MSG(path != NULL, "cmd_poll: path is NULL");
-    ASSERT_MSG(handle != NULL, "cmd_poll: handle is NULL");
+    ASSERT_MSG(path != NULL, "cmd_poll: path argument is NULL after argv extraction — this indicates an internal argument parsing error");
+    ASSERT_MSG(handle != NULL, "cmd_poll: handle argument is NULL after argv extraction — this indicates an internal argument parsing error");
 
     int timeout = 10;
 
     for (int i = 4; i < argc; i++) {
         if (strncmp(argv[i], "--timeout=", 10) == 0) {
-            timeout = atoi(argv[i] + 10);
+            char *endptr;
+            errno = 0;
+            long val = strtol(argv[i] + 10, &endptr, 10);
+            if (errno != 0 || *endptr != '\0' || val < 0 || val > INT_MAX) {
+                fprintf(stderr, "Error: Invalid --timeout value: %s\n", argv[i] + 10);
+                return 4;
+            }
+            timeout = (int)val;
+        } else {
+            fprintf(stderr, "Warning: Unknown option: %s\n", argv[i]);
         }
     }
 
@@ -238,13 +262,7 @@ static int cmd_poll(int argc, char **argv) {
     /* Print new messages */
     chat_state_t state;
     if (chat_read(path, &state) == 0) {
-        /* Print last message (the one that triggered poll return) */
-        for (int i = 0; i < state.message_count; i++) {
-            if (strcmp(state.messages[i].handle, handle) != 0) {
-                /* Print messages from others */
-            }
-        }
-        /* Actually, just print the last message from someone else */
+        /* Print the last message from someone other than the polling handle */
         for (int i = state.message_count - 1; i >= 0; i--) {
             if (strcmp(state.messages[i].handle, handle) != 0) {
                 printf("%s: %s\n", state.messages[i].handle,
@@ -267,7 +285,7 @@ static int cmd_participants(int argc, char **argv) {
     const char *path = argv[2];
 
     /* Precondition: path validated from argv */
-    ASSERT_MSG(path != NULL, "cmd_participants: path is NULL");
+    ASSERT_MSG(path != NULL, "cmd_participants: path argument is NULL after argv extraction — this indicates an internal argument parsing error");
 
     FILE *f = fopen(path, "r");
     if (!f) {
