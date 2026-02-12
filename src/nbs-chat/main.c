@@ -37,8 +37,10 @@ static void print_usage(void) {
     printf("  participants <file>              List participants and counts\n");
     printf("  help                             Show this help\n\n");
     printf("Read options:\n");
-    printf("  --last=N         Show only the last N messages\n");
-    printf("  --since=<handle> Show messages after last message from <handle>\n\n");
+    printf("  --last=N           Show only the last N messages\n");
+    printf("  --since=<handle>   Show messages after last message from <handle>\n");
+    printf("  --unread=<handle>  Show messages after read cursor for <handle>\n");
+    printf("                     Auto-advances cursor after displaying\n\n");
     printf("Poll options:\n");
     printf("  --timeout=N      Timeout in seconds (default: 10)\n\n");
     printf("Exit codes:\n");
@@ -118,7 +120,7 @@ static int cmd_send(int argc, char **argv) {
 
 static int cmd_read(int argc, char **argv) {
     if (argc < 3) {
-        fprintf(stderr, "Usage: nbs-chat read <file> [--last=N] [--since=<handle>]\n");
+        fprintf(stderr, "Usage: nbs-chat read <file> [--last=N] [--since=<handle>] [--unread=<handle>]\n");
         return 4;
     }
 
@@ -129,6 +131,7 @@ static int cmd_read(int argc, char **argv) {
 
     int last_n = -1;
     const char *since_handle = NULL;
+    const char *unread_handle = NULL;
 
     /* Parse options */
     for (int i = 3; i < argc; i++) {
@@ -136,6 +139,8 @@ static int cmd_read(int argc, char **argv) {
             last_n = atoi(argv[i] + 7);
         } else if (strncmp(argv[i], "--since=", 8) == 0) {
             since_handle = argv[i] + 8;
+        } else if (strncmp(argv[i], "--unread=", 9) == 0) {
+            unread_handle = argv[i] + 9;
         }
     }
 
@@ -156,8 +161,13 @@ static int cmd_read(int argc, char **argv) {
     int start = 0;
     int end = state.message_count;
 
-    /* Apply --since filter */
-    if (since_handle) {
+    /* Apply --unread filter (takes precedence over --since) */
+    if (unread_handle) {
+        int cursor = chat_cursor_read(path, unread_handle);
+        /* cursor is last-read index; show messages after it */
+        start = cursor + 1;  /* -1 + 1 = 0 if no cursor exists (show all) */
+    } else if (since_handle) {
+        /* Apply --since filter */
         /* Find last message from since_handle, show messages after it */
         int last_from = -1;
         for (int i = 0; i < state.message_count; i++) {
@@ -178,6 +188,11 @@ static int cmd_read(int argc, char **argv) {
     /* Print messages */
     for (int i = start; i < end; i++) {
         printf("%s: %s\n", state.messages[i].handle, state.messages[i].content);
+    }
+
+    /* Advance read cursor after displaying */
+    if (unread_handle && end > 0) {
+        chat_cursor_write(path, unread_handle, end - 1);
     }
 
     chat_state_free(&state);

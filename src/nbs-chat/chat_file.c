@@ -496,3 +496,128 @@ void chat_state_free(chat_state_t *state) {
     }
     state->message_count = 0;
 }
+
+/* --- Read cursor tracking --- */
+
+/* Build cursor file path from chat path: <chat_path>.cursors */
+static void cursor_path(const char *chat_path, char *out, size_t out_sz) {
+    int n = snprintf(out, out_sz, "%s.cursors", chat_path);
+    ASSERT_MSG(n > 0 && n < (int)out_sz,
+               "cursor_path: path overflow for %s", chat_path);
+}
+
+int chat_cursor_read(const char *chat_path, const char *handle) {
+    ASSERT_MSG(chat_path != NULL, "chat_cursor_read: chat_path is NULL");
+    ASSERT_MSG(handle != NULL, "chat_cursor_read: handle is NULL");
+
+    char cpath[MAX_PATH_LEN];
+    cursor_path(chat_path, cpath, sizeof(cpath));
+
+    FILE *f = fopen(cpath, "r");
+    if (!f) return -1;  /* No cursor file yet */
+
+    char line[256];
+    int result = -1;
+
+    while (fgets(line, sizeof(line), f)) {
+        /* Skip comments and blank lines */
+        if (line[0] == '#' || line[0] == '\n') continue;
+
+        char *eq = strchr(line, '=');
+        if (!eq) continue;
+
+        /* Extract key */
+        size_t klen = (size_t)(eq - line);
+        if (klen >= MAX_HANDLE_LEN) continue;
+
+        char key[MAX_HANDLE_LEN];
+        memcpy(key, line, klen);
+        key[klen] = '\0';
+
+        if (strcmp(key, handle) == 0) {
+            result = atoi(eq + 1);
+            break;
+        }
+    }
+
+    fclose(f);
+    return result;
+}
+
+int chat_cursor_write(const char *chat_path, const char *handle, int index) {
+    ASSERT_MSG(chat_path != NULL, "chat_cursor_write: chat_path is NULL");
+    ASSERT_MSG(handle != NULL, "chat_cursor_write: handle is NULL");
+    ASSERT_MSG(index >= 0, "chat_cursor_write: index is negative: %d", index);
+
+    char cpath[MAX_PATH_LEN];
+    cursor_path(chat_path, cpath, sizeof(cpath));
+
+    /* Lock the cursor file using the chat lock */
+    char lock_path[MAX_PATH_LEN];
+    snprintf(lock_path, sizeof(lock_path), "%s.lock", chat_path);
+    int lock_fd = chat_lock_acquire(lock_path);
+
+    /* Read existing cursors */
+    char handles[MAX_PARTICIPANTS][MAX_HANDLE_LEN];
+    int indices[MAX_PARTICIPANTS];
+    int count = 0;
+    int found = 0;
+
+    FILE *f = fopen(cpath, "r");
+    if (f) {
+        char line[256];
+        while (fgets(line, sizeof(line), f) && count < MAX_PARTICIPANTS) {
+            if (line[0] == '#' || line[0] == '\n') continue;
+
+            char *eq = strchr(line, '=');
+            if (!eq) continue;
+
+            size_t klen = (size_t)(eq - line);
+            if (klen >= MAX_HANDLE_LEN) continue;
+
+            memcpy(handles[count], line, klen);
+            handles[count][klen] = '\0';
+            indices[count] = atoi(eq + 1);
+
+            if (strcmp(handles[count], handle) == 0) {
+                indices[count] = index;  /* Update existing */
+                found = 1;
+            }
+            count++;
+        }
+        fclose(f);
+    }
+
+    /* Add new entry if not found */
+    if (!found && count < MAX_PARTICIPANTS) {
+        snprintf(handles[count], MAX_HANDLE_LEN, "%s", handle);
+        indices[count] = index;
+        count++;
+    }
+
+    /* Write back atomically */
+    char tmp_path[MAX_PATH_LEN + 8];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", cpath);
+
+    f = fopen(tmp_path, "w");
+    if (!f) {
+        chat_lock_release(lock_fd);
+        return -1;
+    }
+
+    fprintf(f, "# Read cursors — last-read message index per handle\n");
+    for (int i = 0; i < count; i++) {
+        fprintf(f, "%s=%d\n", handles[i], indices[i]);
+    }
+    fclose(f);
+
+    if (rename(tmp_path, cpath) != 0) {
+        unlink(tmp_path);
+        chat_lock_release(lock_fd);
+        return -1;
+    }
+
+    chat_lock_release(lock_fd);
+    return 0;
+}
+

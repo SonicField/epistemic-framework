@@ -107,4 +107,21 @@ int chat_poll(const char *path, const char *handle, int timeout_secs);
  */
 void chat_state_free(chat_state_t *state);
 
+/*
+ * chat_cursor_read — Get the read cursor for a handle.
+ *
+ * Returns the last-read message index for the given handle,
+ * or -1 if no cursor exists. The cursor file is <chat_path>.cursors.
+ */
+int chat_cursor_read(const char *chat_path, const char *handle);
+
+/*
+ * chat_cursor_write — Set the read cursor for a handle.
+ *
+ * Updates (or creates) the cursor entry for the given handle.
+ * The cursor file is <chat_path>.cursors.
+ * Returns 0 on success, -1 on error.
+ */
+int chat_cursor_write(const char *chat_path, const char *handle, int index);
+
 #endif /* NBS_CHAT_FILE_H */
