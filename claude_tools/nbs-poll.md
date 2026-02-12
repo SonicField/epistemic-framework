@@ -29,7 +29,7 @@ ls .nbs/chat/*.chat 2>/dev/null
 nbs-chat read <file> --since=<your-handle>
 ```
 
-If there are unread messages, read them and respond appropriately via `nbs-chat send`.
+If there are unread messages, read them and respond appropriately via `nbs-chat send`. When instructions arrive via chat, always send clarifications and responses back to the same chat file — do not respond only in the terminal.
 
 ### 2. Check Workers
 

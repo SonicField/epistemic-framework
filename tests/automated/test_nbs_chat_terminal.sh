@@ -5,7 +5,7 @@
 #   1.  Basic launch and exit
 #   2.  Help command output
 #   3.  Send and display via CLI verification
-#   4.  Multi-line message assembly
+#   4.  Single-enter sends separate messages (not multi-line)
 #   5.  Exit command
 #   6.  EOF (Ctrl-D) handling
 #   7.  Missing arguments
@@ -22,6 +22,14 @@
 #   18. Colour output contains ANSI codes
 #   19. Rapid sequential sends
 #   20. Binary data in message (null-free)
+#   21. Arrow key insertion
+#   22. Home/End keys
+#   23. Delete key
+#   24. Single-enter submit
+#   25. Background polling
+#   26. Non-destructive display
+#   27. Up/Down arrows harmless
+#   28. Backspace at mid-line cursor
 
 set -euo pipefail
 
@@ -88,23 +96,23 @@ echo ""
 echo "3. Send and verify via CLI..."
 CHAT="$TEST_DIR/test3.chat"
 "$NBS_CHAT" create "$CHAT" >/dev/null
-# Send a message then exit
-printf 'Hello world\n\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+# Single enter now sends immediately
+printf 'Hello world\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
 OUTPUT=$("$NBS_CHAT" read "$CHAT")
 check "Message sent via terminal" "$( echo "$OUTPUT" | grep -qF 'tester: Hello world' && echo pass || echo fail )"
 
 echo ""
 
-# --- Test 4: Multi-line message assembly ---
-echo "4. Multi-line message assembly..."
+# --- Test 4: Single-enter sends separate messages ---
+echo "4. Single-enter sends separate messages..."
 CHAT="$TEST_DIR/test4.chat"
 "$NBS_CHAT" create "$CHAT" >/dev/null
-printf 'Line one\nLine two\nLine three\n\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+printf 'Line one\nLine two\nLine three\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
 OUTPUT=$("$NBS_CHAT" read "$CHAT")
-check "Multi-line contains Line one" "$( echo "$OUTPUT" | grep -qF 'Line one' && echo pass || echo fail )"
-check "Multi-line contains Line three" "$( echo "$OUTPUT" | grep -qF 'Line three' && echo pass || echo fail )"
 MSG_COUNT=$(echo "$OUTPUT" | grep -c '^tester:' || true)
-check "Only 1 message (multi-line combined)" "$( [[ "$MSG_COUNT" -eq 1 ]] && echo pass || echo fail )"
+check "3 separate messages sent" "$( [[ "$MSG_COUNT" -eq 3 ]] && echo pass || echo fail )"
+check "First is Line one" "$( echo "$OUTPUT" | head -1 | grep -qF 'Line one' && echo pass || echo fail )"
+check "Last is Line three" "$( echo "$OUTPUT" | tail -1 | grep -qF 'Line three' && echo pass || echo fail )"
 
 echo ""
 
@@ -250,7 +258,7 @@ echo ""
 echo "15. Special characters in handle..."
 CHAT="$TEST_DIR/test15.chat"
 "$NBS_CHAT" create "$CHAT" >/dev/null
-printf 'Testing special handle\n\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "user-123_test" >/dev/null 2>&1 || true
+printf 'Testing special handle\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "user-123_test" >/dev/null 2>&1 || true
 OUTPUT=$("$NBS_CHAT" read "$CHAT")
 check "Handle with dashes/underscores" "$( echo "$OUTPUT" | grep -qF 'user-123_test:' && echo pass || echo fail )"
 
@@ -262,7 +270,7 @@ CHAT="$TEST_DIR/test16.chat"
 "$NBS_CHAT" create "$CHAT" >/dev/null
 
 # Start terminal in background, it will send a message
-(printf 'From terminal\n\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "term-user" >/dev/null 2>&1) &
+(printf 'From terminal\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "term-user" >/dev/null 2>&1) &
 TERM_PID=$!
 
 # Simultaneously send via CLI
@@ -303,10 +311,10 @@ echo ""
 echo "19. Rapid sequential sends..."
 CHAT="$TEST_DIR/test19.chat"
 "$NBS_CHAT" create "$CHAT" >/dev/null
-# Send 20 messages rapidly via terminal
+# Send 20 messages rapidly via terminal (each Enter sends immediately)
 INPUT=""
 for i in $(seq 1 20); do
-    INPUT="${INPUT}Message $i\n\n"
+    INPUT="${INPUT}Message $i\n"
 done
 INPUT="${INPUT}\x04"
 printf "$INPUT" | timeout 15 "$NBS_TERMINAL" "$CHAT" "rapid" >/dev/null 2>&1 || true
@@ -324,6 +332,145 @@ CHAT="$TEST_DIR/test20.chat"
 "$NBS_CHAT" send "$CHAT" "tester" "key=value	tab\\backslash\"quote"
 READBACK=$("$NBS_CHAT" read "$CHAT")
 check "Special bytes preserved" "$( echo "$READBACK" | grep -qF 'key=value' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 21: Arrow key insertion ---
+echo "21. Arrow key insertion..."
+CHAT="$TEST_DIR/test21.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+# Type "helo", Left Left, type "l", Enter
+# Left arrow = ESC [ D = \x1b[D
+printf 'helo\x1b[D\x1b[Dl\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Arrow key insert produces hello" "$( echo "$OUTPUT" | grep -qF 'tester: hello' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 22: Home and End keys ---
+echo "22. Home and End keys..."
+CHAT="$TEST_DIR/test22.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+# Type "world", Home, type "hello ", Enter
+# Home = ESC [ H
+printf 'world\x1b[Hhello \n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Home key prepend" "$( echo "$OUTPUT" | grep -qF 'tester: hello world' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 23: Delete key ---
+echo "23. Delete key..."
+CHAT="$TEST_DIR/test23.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+# Type "hXello" (cursor at 6), Left×5 (cursor at 1), Delete removes 'X', Enter
+# Delete = ESC [ 3 ~
+printf 'hXello\x1b[D\x1b[D\x1b[D\x1b[D\x1b[D\x1b[3~\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Delete key removes char" "$( echo "$OUTPUT" | grep -qF 'tester: hello' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 24: Single-enter submit ---
+echo "24. Single-enter submit..."
+CHAT="$TEST_DIR/test24.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+# Type message, Enter, then exit
+printf 'Quick message\n/exit\n' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Single enter sends" "$( echo "$OUTPUT" | grep -qF 'tester: Quick message' && echo pass || echo fail )"
+MSG_COUNT=$(echo "$OUTPUT" | grep -c '^tester:' || true)
+check "Exactly 1 message" "$( [[ "$MSG_COUNT" -eq 1 ]] && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 25: Background polling ---
+echo "25. Background polling..."
+CHAT="$TEST_DIR/test25.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+
+# Start terminal in background with stdin held open (sleep provides this)
+(sleep 8 | timeout 7 "$NBS_TERMINAL" "$CHAT" "listener" 2>/dev/null) > "$TEST_DIR/poll_output" &
+TERM_PID=$!
+
+# Wait for terminal to start
+sleep 1
+
+# Send a message from CLI (terminal should pick it up via poll)
+"$NBS_CHAT" send "$CHAT" "sender" "Background message"
+
+# Wait for poll interval to elapse
+sleep 3
+
+# Kill terminal
+kill "$TERM_PID" 2>/dev/null || true
+wait "$TERM_PID" 2>/dev/null || true
+
+# Check if the terminal output contains the message
+check "Background poll shows message" "$( grep -qF 'sender' "$TEST_DIR/poll_output" && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 26: Non-destructive display ---
+echo "26. Non-destructive display (type interrupted by incoming)..."
+CHAT="$TEST_DIR/test26.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+
+# Pre-send a message from another user BEFORE terminal starts, so msg count is 1.
+# Then terminal starts, reads it, shows it. Now msg count = 1.
+# Terminal user types "Hel" (partial), waits for a CLI message, then types "lo" and Enter.
+# The CLI message arrives during the wait. poll_and_display should show it without
+# corrupting the input. The final sent message should be "Hello".
+
+"$NBS_CHAT" send "$CHAT" "pre" "setup message"
+
+{
+    # Terminal reads the setup message on start, g_msg_count = 1.
+    # Type "Hel" (no Enter)
+    printf 'Hel'
+    # Wait for the CLI message to be sent and for poll interval
+    sleep 3
+    # Finish typing and send
+    printf 'lo\n'
+    # Exit
+    printf '/exit\n'
+} | timeout 10 "$NBS_TERMINAL" "$CHAT" "typer" >/dev/null 2>&1 &
+TERM_PID=$!
+
+# Wait a moment, then send a message from CLI while terminal is running
+sleep 1
+"$NBS_CHAT" send "$CHAT" "interrupter" "I interrupt you"
+
+# Wait for terminal to finish
+wait "$TERM_PID" 2>/dev/null || true
+
+# The user's message "Hello" should have been sent despite the interruption
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Interrupted typing still sends correct message" "$( echo "$OUTPUT" | grep -qF 'typer: Hello' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 27: Up/Down arrows harmless ---
+echo "27. Up/Down arrows harmless..."
+CHAT="$TEST_DIR/test27.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+# Press up, down, then type message and send
+# Up = ESC [ A, Down = ESC [ B
+printf '\x1b[A\x1b[BHello\n/exit\n' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Up/Down arrows harmless" "$( echo "$OUTPUT" | grep -qF 'tester: Hello' && echo pass || echo fail )"
+
+echo ""
+
+# --- Test 28: Backspace at mid-line cursor ---
+echo "28. Backspace at mid-line cursor..."
+CHAT="$TEST_DIR/test28.chat"
+"$NBS_CHAT" create "$CHAT" >/dev/null
+# Type "helXlo", Left Left, Backspace, Enter
+# Left = ESC [ D, Backspace = 0x7f
+printf 'helXlo\x1b[D\x1b[D\x7f\n\x04' | timeout 5 "$NBS_TERMINAL" "$CHAT" "tester" >/dev/null 2>&1 || true
+OUTPUT=$("$NBS_CHAT" read "$CHAT")
+check "Backspace mid-line" "$( echo "$OUTPUT" | grep -qF 'tester: hello' && echo pass || echo fail )"
 
 echo ""
 
