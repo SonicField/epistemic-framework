@@ -36,9 +36,42 @@ Worse, type-system safety creates a false confidence that leaks beyond its domai
 
 There is also a cost in transparency. Rust's abstractions hide the machine. Ownership, borrowing, lifetimes, trait dispatch — these sit between you and what the processor actually does. For most software this is fine. For performance-critical systems programming, it is a problem.
 
+### The transparency cost: SOMA
+
 The terminal weathering project provides a concrete example. A Rust/PyO3 extension was 6% slower than the pure Python it replaced. Not because Rust generated slow code, but because Rust's safety abstractions sat on top of CPython's call protocol dispatch chain, hiding the actual cost structure. The overhead was in the boundary crossings — GIL checks, type checks, borrow checks, refcount clones — roughly 50 nanoseconds per crossing, multiplied across ten million crossings per benchmark run. Five hundred milliseconds of tax, invisible behind the abstraction.
 
 C, by providing no abstraction, exposed the dispatch chain directly. The solution — replacing type slots in CPython's C API — was only visible because C forced you to look at the layer where the problem lived. The replacement was 2.06 times faster than Rust.
+
+### The irreducible cost: boundary crossing benchmarks
+
+One might object: the SOMA result reflects naive Rust. What if you optimise the PyO3 code properly?
+
+We tried. A controlled benchmark — traversing a 1,000-node linked list, 100,000 iterations, same machine, same Python interpreter — started with the idiomatic PyO3 pattern: `extract::<PyRef<T>>()` on every node. Rust was 7.1 times slower than C (22,823 ns vs 3,202 ns per traversal).
+
+Three changes, all using documented, stable, safe PyO3 API:
+
+1. `#[pyclass(frozen)]` — eliminates borrow tracking for immutable data. The atomic compare-and-swap per node becomes a zero-cost compile-time guarantee.
+2. `Py<RustNode>` instead of `Py<PyAny>` — eliminates the isinstance check per node by making the type statically known.
+3. `.get()` instead of `.extract()` — returns `&T` via direct pointer dereference. No `PyRef` guard, no INCREF/DECREF for the wrapper.
+
+The result: 2,550 ns. Apparently faster than C at 3,065 ns. But the comparison was confounded — C's GC tracking added 16 bytes per object, pushing the list out of L1 cache while Rust's smaller objects still fit. With equal object sizes (GC tracking disabled for both), the honest numbers:
+
+| Implementation | ns/node | Per-node cost |
+|----------------|---------|---------------|
+| C (no GC, 32 bytes) | 2.0 | 2 loads, 1 add, 1 compare |
+| Rust (frozen, 32 bytes) | 2.6 | Same, plus INCREF + DECREF |
+
+C is 1.27 times faster. The remaining 0.6 ns/node is the irreducible cost of Rust's ownership model: `clone_ref()` (INCREF) to advance to the next node, then drop the old handle (DECREF). C copies a raw pointer. Rust cannot — the borrow checker requires an owned handle, and obtaining one requires a reference count round-trip.
+
+This gap cannot be closed without `unsafe`. It is not a PyO3 bug or a missing optimisation. It is what ownership costs.
+
+The compiler was controlled: the C extension was tested with both GCC 11.5 and Clang 21.1 (the same LLVM backend Rust uses). Both produced identical performance. The difference is not the compiler. It is the INCREF/DECREF.
+
+### What this demonstrates
+
+We tried hard to make Rust competitive. Three expert-level optimisations, all within the safe API, closed a 7.1x gap to 1.27x. That is impressive engineering on PyO3's part. But the final gap is structural — it is the cost of the ownership model itself, and it cannot be removed within the safety guarantees Rust provides.
+
+This is the transparency cost made precise. C sees the pointer graph as it is: raw addresses, no ownership ceremony. Rust sees it through the ownership model, which requires reference counting even when the GIL already guarantees nothing will be deallocated. The safety noun (ownership) forces a runtime verb (INCREF/DECREF) that the problem does not require. C, by promising nothing, pays for nothing it does not need.
 
 ## The Discipline Argument
 
