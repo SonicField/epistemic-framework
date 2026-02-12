@@ -265,21 +265,26 @@ POLL_PID=$!
 
 # --- Editor mode ---
 
+EDIT_TMPFILE=""
+
 open_editor() {
     local editor="${EDITOR:-vim}"
-    local tmpfile
-    tmpfile=$(mktemp "${STATE_DIR}/edit.XXXXXX")
+    EDIT_TMPFILE=$(mktemp "${STATE_DIR}/edit.XXXXXX")
 
-    # Run editor — this takes over the terminal
-    "$editor" "$tmpfile"
+    # Run editor on /dev/tty so it gets the real terminal,
+    # not the command substitution's captured stdout
+    "$editor" "$EDIT_TMPFILE" </dev/tty >/dev/tty 2>/dev/tty
+}
 
-    # Read the file content
+read_editor_result() {
     local content=""
-    if [[ -f "$tmpfile" ]] && [[ -s "$tmpfile" ]]; then
-        content=$(cat "$tmpfile")
+    if [[ -n "$EDIT_TMPFILE" ]] && [[ -f "$EDIT_TMPFILE" ]] && [[ -s "$EDIT_TMPFILE" ]]; then
+        content=$(cat "$EDIT_TMPFILE")
     fi
-    rm -f "$tmpfile"
-
+    if [[ -n "$EDIT_TMPFILE" ]]; then
+        rm -f "$EDIT_TMPFILE"
+        EDIT_TMPFILE=""
+    fi
     echo "$content"
 }
 
@@ -300,7 +305,8 @@ while true; do
 
         # Check for /edit command (only on first line of buffer)
         if [[ -z "$INPUT_BUFFER" ]] && [[ "$user_input" == "/edit" ]]; then
-            msg=$(open_editor)
+            open_editor
+            msg=$(read_editor_result)
             if [[ -n "$msg" ]]; then
                 if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$msg" 2>/dev/null; then
                     format_message "${HANDLE}: ${msg}"
