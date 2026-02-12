@@ -1,0 +1,277 @@
+/*
+ * main.c — nbs-chat CLI tool
+ *
+ * Usage: nbs-chat <command> [args...]
+ *
+ * Commands:
+ *   create <file>                    Create new chat file
+ *   send <file> <handle> <message>   Send a message
+ *   read <file> [options]            Read messages
+ *   poll <file> <handle> [options]   Wait for new message
+ *   participants <file>              List participants
+ *   help                             Show usage
+ *
+ * Exit codes:
+ *   0 - Success
+ *   1 - General error
+ *   2 - File not found
+ *   3 - Timeout (poll)
+ *   4 - Invalid arguments
+ */
+
+#include "chat_file.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+static void print_usage(void) {
+    printf("nbs-chat: File-based AI-to-AI chat with atomic locking\n\n");
+    printf("Usage: nbs-chat <command> [args...]\n\n");
+    printf("Commands:\n");
+    printf("  create <file>                    Create new chat file\n");
+    printf("  send <file> <handle> <message>   Send a message\n");
+    printf("  read <file> [options]            Read messages\n");
+    printf("  poll <file> <handle> [options]   Wait for new message\n");
+    printf("  participants <file>              List participants and counts\n");
+    printf("  help                             Show this help\n\n");
+    printf("Read options:\n");
+    printf("  --last=N         Show only the last N messages\n");
+    printf("  --since=<handle> Show messages after last message from <handle>\n\n");
+    printf("Poll options:\n");
+    printf("  --timeout=N      Timeout in seconds (default: 10)\n\n");
+    printf("Exit codes:\n");
+    printf("  0 - Success\n");
+    printf("  1 - General error\n");
+    printf("  2 - File not found / already exists\n");
+    printf("  3 - Timeout (poll only)\n");
+    printf("  4 - Invalid arguments\n");
+}
+
+static int cmd_create(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "Usage: nbs-chat create <file>\n");
+        return 4;
+    }
+
+    const char *path = argv[2];
+
+    /* Resolve to absolute path */
+    char abs_path[MAX_PATH_LEN * 2];
+    if (path[0] != '/') {
+        char cwd[MAX_PATH_LEN];
+        if (getcwd(cwd, sizeof(cwd))) {
+            snprintf(abs_path, sizeof(abs_path), "%s/%s", cwd, path);
+            path = abs_path;
+        }
+    }
+
+    int result = chat_create(path);
+    if (result == -1) {
+        fprintf(stderr, "Error: File already exists: %s\n", path);
+        return 1;
+    }
+    if (result < 0) {
+        fprintf(stderr, "Error: Could not create file: %s\n", path);
+        return 1;
+    }
+
+    printf("Created: %s\n", path);
+    return 0;
+}
+
+static int cmd_send(int argc, char **argv) {
+    if (argc < 5) {
+        fprintf(stderr, "Usage: nbs-chat send <file> <handle> <message>\n");
+        return 4;
+    }
+
+    const char *path = argv[2];
+    const char *handle = argv[3];
+    const char *message = argv[4];
+
+    /* Check file exists */
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Error: Chat file not found: %s\n", path);
+        return 2;
+    }
+    fclose(f);
+
+    int result = chat_send(path, handle, message);
+    if (result < 0) {
+        fprintf(stderr, "Error: Failed to send message\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+static int cmd_read(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "Usage: nbs-chat read <file> [--last=N] [--since=<handle>]\n");
+        return 4;
+    }
+
+    const char *path = argv[2];
+    int last_n = -1;
+    const char *since_handle = NULL;
+
+    /* Parse options */
+    for (int i = 3; i < argc; i++) {
+        if (strncmp(argv[i], "--last=", 7) == 0) {
+            last_n = atoi(argv[i] + 7);
+        } else if (strncmp(argv[i], "--since=", 8) == 0) {
+            since_handle = argv[i] + 8;
+        }
+    }
+
+    /* Check file exists */
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Error: Chat file not found: %s\n", path);
+        return 2;
+    }
+    fclose(f);
+
+    chat_state_t state;
+    if (chat_read(path, &state) < 0) {
+        fprintf(stderr, "Error: Failed to read chat file\n");
+        return 1;
+    }
+
+    int start = 0;
+    int end = state.message_count;
+
+    /* Apply --since filter */
+    if (since_handle) {
+        /* Find last message from since_handle, show messages after it */
+        int last_from = -1;
+        for (int i = 0; i < state.message_count; i++) {
+            if (strcmp(state.messages[i].handle, since_handle) == 0) {
+                last_from = i;
+            }
+        }
+        if (last_from >= 0) {
+            start = last_from + 1;
+        }
+    }
+
+    /* Apply --last filter */
+    if (last_n >= 0 && end - start > last_n) {
+        start = end - last_n;
+    }
+
+    /* Print messages */
+    for (int i = start; i < end; i++) {
+        printf("%s: %s\n", state.messages[i].handle, state.messages[i].content);
+    }
+
+    chat_state_free(&state);
+    return 0;
+}
+
+static int cmd_poll(int argc, char **argv) {
+    if (argc < 4) {
+        fprintf(stderr, "Usage: nbs-chat poll <file> <handle> [--timeout=N]\n");
+        return 4;
+    }
+
+    const char *path = argv[2];
+    const char *handle = argv[3];
+    int timeout = 10;
+
+    for (int i = 4; i < argc; i++) {
+        if (strncmp(argv[i], "--timeout=", 10) == 0) {
+            timeout = atoi(argv[i] + 10);
+        }
+    }
+
+    /* Check file exists */
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Error: Chat file not found: %s\n", path);
+        return 2;
+    }
+    fclose(f);
+
+    int result = chat_poll(path, handle, timeout);
+    if (result == 3) return 3; /* Timeout */
+    if (result < 0) {
+        fprintf(stderr, "Error: Poll failed\n");
+        return 1;
+    }
+
+    /* Print new messages */
+    chat_state_t state;
+    if (chat_read(path, &state) == 0) {
+        /* Print last message (the one that triggered poll return) */
+        for (int i = 0; i < state.message_count; i++) {
+            if (strcmp(state.messages[i].handle, handle) != 0) {
+                /* Print messages from others */
+            }
+        }
+        /* Actually, just print the last message from someone else */
+        for (int i = state.message_count - 1; i >= 0; i--) {
+            if (strcmp(state.messages[i].handle, handle) != 0) {
+                printf("%s: %s\n", state.messages[i].handle,
+                       state.messages[i].content);
+                break;
+            }
+        }
+        chat_state_free(&state);
+    }
+
+    return 0;
+}
+
+static int cmd_participants(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "Usage: nbs-chat participants <file>\n");
+        return 4;
+    }
+
+    const char *path = argv[2];
+
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Error: Chat file not found: %s\n", path);
+        return 2;
+    }
+    fclose(f);
+
+    chat_state_t state;
+    if (chat_read(path, &state) < 0) {
+        fprintf(stderr, "Error: Failed to read chat file\n");
+        return 1;
+    }
+
+    for (int i = 0; i < state.participant_count; i++) {
+        printf("%-24s %d messages\n", state.participants[i].handle,
+               state.participants[i].count);
+    }
+
+    chat_state_free(&state);
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Error: No command specified\n");
+        fprintf(stderr, "Run 'nbs-chat help' for usage\n");
+        return 4;
+    }
+
+    const char *cmd = argv[1];
+
+    if (strcmp(cmd, "create") == 0) return cmd_create(argc, argv);
+    if (strcmp(cmd, "send") == 0) return cmd_send(argc, argv);
+    if (strcmp(cmd, "read") == 0) return cmd_read(argc, argv);
+    if (strcmp(cmd, "poll") == 0) return cmd_poll(argc, argv);
+    if (strcmp(cmd, "participants") == 0) return cmd_participants(argc, argv);
+    if (strcmp(cmd, "help") == 0) { print_usage(); return 0; }
+
+    fprintf(stderr, "Error: Unknown command: %s\n", cmd);
+    fprintf(stderr, "Run 'nbs-chat help' for usage\n");
+    return 4;
+}
