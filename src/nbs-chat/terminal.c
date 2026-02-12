@@ -251,18 +251,18 @@ static void line_redraw(const line_state_t *ls, const char *handle) {
 
     /* Calculate where the cursor needs to be vs where it is now.
      * After printing, the cursor is at the end of the content.
-     * Both positions are measured in characters from the start. */
+     * Both positions are measured in characters from the start.
+     *
+     * Terminal deferred-wrap: when output fills exactly to the last column,
+     * the cursor stays on that column until the next character is printed.
+     * This means a position at a multiple of tw is still on the previous
+     * row, not the next one. We use (pos - 1) / tw for row calculation
+     * when pos > 0 to account for this. */
     int end_abs = prompt_vlen + (int)ls->len;
     int target_abs = prompt_vlen + (int)ls->cursor;
 
     int end_row = (end_abs > 0) ? ((end_abs - 1) / tw) : 0;
-    /* Handle edge case: if end_abs is 0, cursor is on row 0 */
-    if (end_abs == 0) end_row = 0;
-    /* If we just printed exactly to the edge, the terminal does deferred
-     * wrap — cursor stays on the last column. So end_row = (end_abs-1)/tw
-     * is correct for end_abs > 0. */
-
-    int target_row = target_abs / tw;
+    int target_row = (target_abs > 0) ? ((target_abs - 1) / tw) : 0;
     int target_col = target_abs % tw;
 
     /* Move up from end position to target row */
