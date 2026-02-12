@@ -1,15 +1,19 @@
 #!/bin/bash
 # nbs-claude: Launch Claude Code with automatic chat/worker polling
 #
-# Wraps `claude` in a pty-session with a sidecar that monitors for idle
-# state and injects /nbs-poll when claude is waiting for user input.
+# Runs claude with a background sidecar that monitors for idle state
+# and injects /nbs-poll when claude is waiting for user input.
+#
+# Works in two modes:
+#   - Inside tmux: runs claude in the current pane, sidecar monitors it
+#   - Outside tmux: creates a pty-session, attaches to it
 #
 # Usage:
 #   nbs-claude [claude-args...]
 #
 # Examples:
 #   nbs-claude                    # Start interactive claude
-#   nbs-claude -p "fix the bug"  # Pass arguments through
+#   nbs-claude --resume abc123   # Resume session with polling
 #
 # Environment:
 #   NBS_POLL_INTERVAL  Seconds of idle before injecting poll (default: 30)
@@ -32,7 +36,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PTY_SESSION="${SCRIPT_DIR}/pty-session"
 
 if [[ ! -x "$PTY_SESSION" ]]; then
-    # Try installed location
     PTY_SESSION="${HOME}/.nbs/bin/pty-session"
 fi
 
@@ -41,28 +44,83 @@ if [[ ! -x "$PTY_SESSION" ]]; then
     exit 1
 fi
 
-# Session name — unique per invocation to allow multiple instances
-SESSION_NAME="nbs-claude-$$"
-
 # --- Cleanup ---
+
+SIDECAR_PID=""
+SESSION_NAME=""
+MODE=""
 
 cleanup() {
     # Kill sidecar if running
-    if [[ -n "${SIDECAR_PID:-}" ]] && kill -0 "$SIDECAR_PID" 2>/dev/null; then
+    if [[ -n "$SIDECAR_PID" ]] && kill -0 "$SIDECAR_PID" 2>/dev/null; then
         kill "$SIDECAR_PID" 2>/dev/null
         wait "$SIDECAR_PID" 2>/dev/null
     fi
 
-    # Kill the pty-session
-    "$PTY_SESSION" kill "$SESSION_NAME" 2>/dev/null
+    # Kill pty-session if we created one
+    if [[ "$MODE" == "pty" && -n "$SESSION_NAME" ]]; then
+        "$PTY_SESSION" kill "$SESSION_NAME" 2>/dev/null
+    fi
 
     exit 0
 }
 trap cleanup INT TERM EXIT
 
-# --- Idle detection sidecar ---
+# --- Idle detection sidecar (tmux mode) ---
+# Monitors the current tmux pane for idle and injects /nbs-poll
 
-poll_sidecar() {
+poll_sidecar_tmux() {
+    local interval="$1"
+    local pane_id="$2"
+
+    local idle_seconds=0
+    local last_content_hash=""
+
+    while true; do
+        sleep 1
+
+        # Check pane still exists
+        if ! tmux list-panes -t "$pane_id" &>/dev/null; then
+            break
+        fi
+
+        # Capture current pane content
+        local content
+        content=$(tmux capture-pane -t "$pane_id" -p -S -5 2>/dev/null) || continue
+
+        # Hash the content to detect changes
+        local current_hash
+        current_hash=$(echo "$content" | md5sum | cut -d' ' -f1)
+
+        if [[ "$current_hash" != "$last_content_hash" ]]; then
+            idle_seconds=0
+            last_content_hash="$current_hash"
+            continue
+        fi
+
+        idle_seconds=$((idle_seconds + 1))
+
+        if [[ $idle_seconds -ge $interval ]]; then
+            # Check if claude appears to be at a prompt
+            if echo "$content" | tail -3 | grep -qE '❯|>\s*$'; then
+                # Inject /nbs-poll followed by Enter
+                tmux send-keys -t "$pane_id" '/nbs-poll' Enter
+
+                idle_seconds=0
+                last_content_hash=""
+
+                # Wait for poll to complete
+                sleep 10
+            else
+                idle_seconds=0
+            fi
+        fi
+    done
+}
+
+# --- Idle detection sidecar (pty-session mode) ---
+
+poll_sidecar_pty() {
     local pty="$1"
     local session="$2"
     local interval="$3"
@@ -73,47 +131,34 @@ poll_sidecar() {
     while true; do
         sleep 1
 
-        # Check session is still alive
         if ! "$pty" list 2>/dev/null | grep -q "$session"; then
             break
         fi
 
-        # Capture current screen content
         local content
         content=$("$pty" read "$session" --scrollback=5 2>/dev/null) || continue
 
-        # Hash the content to detect changes
         local current_hash
         current_hash=$(echo "$content" | md5sum | cut -d' ' -f1)
 
         if [[ "$current_hash" != "$last_content_hash" ]]; then
-            # Screen changed — reset idle counter
             idle_seconds=0
             last_content_hash="$current_hash"
             continue
         fi
 
-        # Screen unchanged — increment idle counter
         idle_seconds=$((idle_seconds + 1))
 
         if [[ $idle_seconds -ge $interval ]]; then
-            # Check if claude appears to be at a prompt (waiting for input)
-            # Look for the prompt indicator in the last few lines
             if echo "$content" | tail -3 | grep -qE '❯|>\s*$'; then
-                # Inject /nbs-poll
                 "$pty" send "$session" '/nbs-poll'
                 sleep 0.5
                 "$pty" send "$session" ''
 
-                # Reset idle counter — give claude time to process
                 idle_seconds=0
-                # Update hash so we don't re-trigger immediately
                 last_content_hash=""
-
-                # Wait for poll to complete before resuming idle detection
                 sleep 10
             else
-                # Not at prompt — reset and wait
                 idle_seconds=0
             fi
         fi
@@ -122,46 +167,76 @@ poll_sidecar() {
 
 # --- Main ---
 
-# Build claude command
-CLAUDE_CMD="claude"
-if [[ $# -gt 0 ]]; then
-    # Quote args for safe passing
-    CLAUDE_ARGS=""
-    for arg in "$@"; do
-        if [[ -z "$CLAUDE_ARGS" ]]; then
-            CLAUDE_ARGS="$(printf '%q' "$arg")"
-        else
-            CLAUDE_ARGS="$CLAUDE_ARGS $(printf '%q' "$arg")"
-        fi
-    done
-    CLAUDE_CMD="claude $CLAUDE_ARGS"
-fi
+# Build claude command with args
+CLAUDE_ARGS=("claude")
+for arg in "$@"; do
+    CLAUDE_ARGS+=("$arg")
+done
 
 echo "Starting Claude Code with NBS polling..."
-echo "  Session: $SESSION_NAME"
 echo "  Poll interval: ${POLL_INTERVAL}s idle"
 if [[ "$POLL_DISABLE" == "1" ]]; then
     echo "  Polling: DISABLED"
 fi
-echo ""
 
-# Create pty-session running claude
-"$PTY_SESSION" create "$SESSION_NAME" "$CLAUDE_CMD"
+if [[ -n "${TMUX:-}" ]]; then
+    # --- Already inside tmux ---
+    MODE="tmux"
 
-if [[ $? -ne 0 ]]; then
-    echo "Error: Failed to create pty-session" >&2
-    exit 1
+    # Get current pane ID before launching claude
+    PANE_ID=$(tmux display-message -p '#{pane_id}')
+    echo "  Mode: tmux (pane $PANE_ID)"
+    echo ""
+
+    # Start sidecar monitoring this pane
+    if [[ "$POLL_DISABLE" != "1" ]]; then
+        poll_sidecar_tmux "$POLL_INTERVAL" "$PANE_ID" &
+        SIDECAR_PID=$!
+    fi
+
+    # Run claude in foreground — replaces this process's foreground
+    # but the sidecar is already running in background
+    "${CLAUDE_ARGS[@]}"
+
+    # Claude exited — cleanup runs via trap
+else
+    # --- Not inside tmux ---
+    MODE="pty"
+    SESSION_NAME="nbs-claude-$$"
+
+    echo "  Mode: pty-session ($SESSION_NAME)"
+    echo ""
+
+    # Build command string for pty-session
+    CLAUDE_CMD="claude"
+    if [[ $# -gt 0 ]]; then
+        CLAUDE_CMD_ARGS=""
+        for arg in "$@"; do
+            if [[ -z "$CLAUDE_CMD_ARGS" ]]; then
+                CLAUDE_CMD_ARGS="$(printf '%q' "$arg")"
+            else
+                CLAUDE_CMD_ARGS="$CLAUDE_CMD_ARGS $(printf '%q' "$arg")"
+            fi
+        done
+        CLAUDE_CMD="claude $CLAUDE_CMD_ARGS"
+    fi
+
+    # Create pty-session running claude
+    "$PTY_SESSION" create "$SESSION_NAME" "$CLAUDE_CMD"
+
+    if [[ $? -ne 0 ]]; then
+        echo "Error: Failed to create pty-session" >&2
+        exit 1
+    fi
+
+    # Start sidecar if polling enabled
+    if [[ "$POLL_DISABLE" != "1" ]]; then
+        poll_sidecar_pty "$PTY_SESSION" "$SESSION_NAME" "$POLL_INTERVAL" &
+        SIDECAR_PID=$!
+    fi
+
+    # Attach to the session
+    tmux attach-session -t "pty_${SESSION_NAME}"
 fi
 
-# Start sidecar if polling enabled
-SIDECAR_PID=""
-if [[ "$POLL_DISABLE" != "1" ]]; then
-    poll_sidecar "$PTY_SESSION" "$SESSION_NAME" "$POLL_INTERVAL" &
-    SIDECAR_PID=$!
-fi
-
-# Attach to the session interactively
-# This gives the user direct terminal access to claude
-tmux attach-session -t "pty_${SESSION_NAME}"
-
-# When user detaches or claude exits, cleanup runs via trap
+# When user exits, cleanup runs via trap

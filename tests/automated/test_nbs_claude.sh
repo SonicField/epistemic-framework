@@ -3,10 +3,11 @@
 #
 # Tests:
 #   1. Script exists and is executable
-#   2. Handles missing pty-session gracefully
+#   2. Key components present
 #   3. Session naming includes PID
-#   4. Poll sidecar function exists
-#   5. Args are passed through correctly
+#   4. Idle detection logic
+#   5. Dual-mode support (tmux vs pty-session)
+#   6. nbs-poll skill doc
 
 set -uo pipefail
 
@@ -101,8 +102,46 @@ else
     fail "Missing content hashing"
 fi
 
-# 5. nbs-poll skill doc exists
-echo "5. nbs-poll skill doc..."
+# 5. Dual-mode support
+echo "5. Dual-mode support..."
+if grep -q 'poll_sidecar_tmux' "$NBS_CLAUDE"; then
+    pass "Has tmux sidecar function"
+else
+    fail "Missing tmux sidecar function"
+fi
+
+if grep -q 'poll_sidecar_pty' "$NBS_CLAUDE"; then
+    pass "Has pty-session sidecar function"
+else
+    fail "Missing pty-session sidecar function"
+fi
+
+if grep -q 'TMUX:-' "$NBS_CLAUDE"; then
+    pass "Detects existing tmux session"
+else
+    fail "Missing tmux detection"
+fi
+
+if grep -q 'tmux capture-pane' "$NBS_CLAUDE"; then
+    pass "Uses tmux capture-pane for monitoring"
+else
+    fail "Missing tmux capture-pane"
+fi
+
+if grep -q 'tmux send-keys' "$NBS_CLAUDE"; then
+    pass "Uses tmux send-keys for injection"
+else
+    fail "Missing tmux send-keys"
+fi
+
+if grep -q 'MODE="tmux"' "$NBS_CLAUDE" && grep -q 'MODE="pty"' "$NBS_CLAUDE"; then
+    pass "Has both mode paths"
+else
+    fail "Missing mode paths"
+fi
+
+# 6. nbs-poll skill doc
+echo "6. nbs-poll skill doc..."
 POLL_DOC="$PROJECT_ROOT/claude_tools/nbs-poll.md"
 if [[ -f "$POLL_DOC" ]]; then
     pass "Skill doc exists"
