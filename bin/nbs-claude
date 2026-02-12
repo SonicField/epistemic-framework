@@ -104,7 +104,11 @@ poll_sidecar_tmux() {
             # Check if claude appears to be at a prompt
             if echo "$content" | tail -3 | grep -qE '❯|>\s*$'; then
                 # Inject /nbs-poll followed by Enter
-                tmux send-keys -t "$pane_id" '/nbs-poll' Enter
+                # Send text first, small delay, then Enter separately
+                # Claude Code may not process pasted text + Enter atomically
+                tmux send-keys -t "$pane_id" -l '/nbs-poll'
+                sleep 0.3
+                tmux send-keys -t "$pane_id" Enter
 
                 idle_seconds=0
                 last_content_hash=""
