@@ -1,0 +1,562 @@
+#!/bin/bash
+# nbs-chat: File-based AI-to-AI chat with atomic locking
+#
+# Enables multiple AI instances to communicate through a shared file.
+# Messages are base64-encoded for safe transport. File locking (flock)
+# ensures atomic reads and writes. The lock is held only during the
+# bash command execution — an AI can never hold it across tool calls.
+#
+# Usage:
+#   nbs-chat create <file>
+#   nbs-chat send <file> <handle> <message>
+#   nbs-chat read <file>
+#   nbs-chat read <file> --last=N
+#   nbs-chat read <file> --since=<handle>
+#   nbs-chat poll <file> <handle> --timeout=N
+#   nbs-chat participants <file>
+#   nbs-chat help
+#
+# Exit codes:
+#   0 - Success
+#   1 - General error
+#   2 - Chat file not found
+#   3 - Timeout (poll command)
+#   4 - Invalid arguments
+
+set -uo pipefail
+
+# --- Assertion helpers ---
+
+assert_not_empty() {
+    local var_name="$1"
+    local var_value="$2"
+    [[ -n "$var_value" ]] || {
+        echo "ASSERTION FAILED: $var_name is empty" >&2
+        exit 4
+    }
+}
+
+assert_file_exists() {
+    local file="$1"
+    [[ -f "$file" ]] || {
+        echo "ASSERTION FAILED: File not found: $file" >&2
+        exit 2
+    }
+}
+
+assert_is_chat_file() {
+    local file="$1"
+    local first_line
+    first_line=$(head -1 "$file" 2>/dev/null)
+    [[ "$first_line" == "=== nbs-chat ===" ]] || {
+        echo "ASSERTION FAILED: Not a valid chat file (missing header): $file" >&2
+        exit 1
+    }
+}
+
+# --- Core functions ---
+
+usage() {
+    cat <<'USAGE'
+nbs-chat: File-based AI-to-AI chat with atomic locking
+
+Usage:
+  nbs-chat create <file>
+      Create empty chat file with header. Parent directories are created
+      if needed. Outputs the absolute path of the created file.
+
+  nbs-chat send <file> <handle> <message>
+      Append base64-encoded message. Atomic under flock.
+
+  nbs-chat read <file>
+      Read all messages (decoded). Under flock.
+
+  nbs-chat read <file> --last=N
+      Read last N messages only.
+
+  nbs-chat read <file> --since=<handle>
+      Read messages after last message from <handle>.
+
+  nbs-chat poll <file> <handle> --timeout=N
+      Block until a new message appears that is not from <handle>.
+      Default timeout: 30 seconds.
+
+  nbs-chat participants <file>
+      List participants and message counts.
+
+  nbs-chat help
+      Show this help.
+
+Convention:
+  Chat files are typically created in .nbs/chat/ with .chat extension,
+  but any path is accepted.
+
+Exit codes:
+  0 - Success
+  1 - General error
+  2 - Chat file not found
+  3 - Timeout (poll command)
+  4 - Invalid arguments
+USAGE
+}
+
+lock_file() {
+    echo "${1}.lock"
+}
+
+# Write chat file and compute correct file-length.
+# Takes the file path and content WITHOUT the file-length line.
+# Inserts the file-length line with a self-consistent value.
+# Caller must hold lock.
+write_chat_with_length() {
+    local chat_file="$1"
+    local content_without_length="$2"
+
+    # Write without file-length line to measure base size
+    printf '%s\n' "$content_without_length" > "$chat_file"
+    local base_size
+    base_size=$(wc -c < "$chat_file")
+
+    # The file-length line format is "file-length: N\n"
+    # We need to find N such that base_size + len("file-length: N\n") = N
+    # len("file-length: ") = 13, len("\n") = 1, so N = base_size + 14 + len(str(N))
+    local candidate=$((base_size + 14 + ${#base_size}))
+    # Verify digit count didn't change
+    if [[ ${#candidate} -ne ${#base_size} ]]; then
+        candidate=$((base_size + 14 + ${#candidate}))
+    fi
+
+    # Insert file-length line after last-write line
+    sed -i "/^last-write: /a file-length: ${candidate}" "$chat_file"
+
+    # Postcondition: verify the computed length matches actual
+    local actual_size
+    actual_size=$(wc -c < "$chat_file")
+    if [[ "$actual_size" -ne "$candidate" ]]; then
+        echo "WARNING: file-length mismatch: expected ${candidate}, got ${actual_size}" >&2
+    fi
+}
+
+# Read the messages portion of a chat file (below the --- delimiter).
+# Returns raw base64-encoded lines. Caller must hold lock.
+read_raw_messages() {
+    local chat_file="$1"
+    sed -n '/^---$/,$ p' "$chat_file" | tail -n +2
+}
+
+# Count non-empty message lines. Caller must hold lock.
+count_messages() {
+    local chat_file="$1"
+    local raw
+    raw=$(read_raw_messages "$chat_file")
+    if [[ -z "$raw" ]]; then
+        echo 0
+    else
+        echo "$raw" | grep -c '.' || echo 0
+    fi
+}
+
+# --- Commands ---
+
+cmd_create() {
+    local chat_file="${1:-}"
+
+    if [[ -z "$chat_file" ]]; then
+        echo "Error: create requires <file>" >&2
+        echo "Usage: nbs-chat create <file>" >&2
+        return 4
+    fi
+
+    # Create parent directories if needed
+    local parent_dir
+    parent_dir=$(dirname "$chat_file")
+    if [[ ! -d "$parent_dir" ]]; then
+        mkdir -p "$parent_dir"
+    fi
+
+    # Resolve to absolute path so the output is usable from any working directory
+    chat_file="$(cd "$(dirname "$chat_file")" && pwd)/$(basename "$chat_file")"
+
+    # Precondition: file must not already exist
+    if [[ -f "$chat_file" ]]; then
+        echo "Error: Chat file already exists: $chat_file" >&2
+        return 1
+    fi
+
+    local lf
+    lf=$(lock_file "$chat_file")
+
+    (
+        flock -x 200
+
+        local timestamp
+        timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+        local content
+        content="=== nbs-chat ===
+last-writer: (none)
+last-write: ${timestamp}
+participants: (none)
+---"
+
+        write_chat_with_length "$chat_file" "$content"
+
+    ) 200>"$lf"
+
+    # Postcondition: file was created
+    assert_file_exists "$chat_file"
+    assert_is_chat_file "$chat_file"
+
+    echo "Created: $chat_file"
+    return 0
+}
+
+cmd_send() {
+    local chat_file="${1:-}"
+    local handle="${2:-}"
+    local message="${3:-}"
+
+    if [[ -z "$chat_file" ]] || [[ -z "$handle" ]] || [[ -z "$message" ]]; then
+        echo "Error: send requires <file> <handle> <message>" >&2
+        echo "Usage: nbs-chat send <file> <handle> <message>" >&2
+        return 4
+    fi
+
+    assert_file_exists "$chat_file"
+    assert_is_chat_file "$chat_file"
+
+    local lf
+    lf=$(lock_file "$chat_file")
+
+    (
+        flock -x 200
+
+        # Read existing messages
+        local messages
+        messages=$(read_raw_messages "$chat_file")
+
+        # Encode new message
+        local new_msg
+        new_msg=$(printf '%s' "${handle}: ${message}" | base64 -w 0)
+
+        # Append to messages
+        if [[ -n "$messages" ]]; then
+            messages="${messages}
+${new_msg}"
+        else
+            messages="${new_msg}"
+        fi
+
+        # Extract current participants, add new handle if not present
+        local current_participants
+        current_participants=$(grep '^participants:' "$chat_file" | sed 's/^participants:[[:space:]]*//')
+
+        if [[ "$current_participants" == "(none)" ]]; then
+            current_participants="$handle"
+        elif ! echo "$current_participants" | grep -qF "$handle"; then
+            current_participants="${current_participants}, ${handle}"
+        fi
+
+        local timestamp
+        timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+        # Rebuild file atomically
+        local content
+        content="=== nbs-chat ===
+last-writer: ${handle}
+last-write: ${timestamp}
+participants: ${current_participants}
+---
+${messages}"
+
+        write_chat_with_length "$chat_file" "$content"
+
+    ) 200>"$lf"
+
+    return 0
+}
+
+cmd_read() {
+    local chat_file="${1:-}"
+    shift 2>/dev/null || true
+
+    if [[ -z "$chat_file" ]]; then
+        echo "Error: read requires <file>" >&2
+        echo "Usage: nbs-chat read <file> [--last=N] [--since=<handle>]" >&2
+        return 4
+    fi
+
+    assert_file_exists "$chat_file"
+    assert_is_chat_file "$chat_file"
+
+    local last_n=""
+    local since_handle=""
+
+    # Parse options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --last=*)
+                last_n="${1#--last=}"
+                shift
+                ;;
+            --since=*)
+                since_handle="${1#--since=}"
+                shift
+                ;;
+            *)
+                echo "Error: Unknown option: $1" >&2
+                return 4
+                ;;
+        esac
+    done
+
+    local lf
+    lf=$(lock_file "$chat_file")
+
+    (
+        flock -x 200
+
+        local raw
+        raw=$(read_raw_messages "$chat_file")
+
+        # If no messages, output nothing and exit cleanly
+        if [[ -z "$raw" ]]; then
+            exit 0
+        fi
+
+        # Apply --since filter: find last message from handle, return everything after
+        if [[ -n "$since_handle" ]]; then
+            local filtered=""
+            local last_line_num=0
+            local line_num=0
+
+            # First pass: find the last line from this handle
+            while IFS= read -r line; do
+                line_num=$((line_num + 1))
+                [[ -z "$line" ]] && continue
+                local decoded
+                decoded=$(echo "$line" | base64 -d 2>/dev/null) || continue
+                if echo "$decoded" | grep -q "^${since_handle}: "; then
+                    last_line_num=$line_num
+                fi
+            done <<< "$raw"
+
+            # Second pass: collect lines after the last one from this handle
+            if [[ $last_line_num -gt 0 ]]; then
+                line_num=0
+                while IFS= read -r line; do
+                    line_num=$((line_num + 1))
+                    [[ -z "$line" ]] && continue
+                    if [[ $line_num -gt $last_line_num ]]; then
+                        if [[ -n "$filtered" ]]; then
+                            filtered="${filtered}
+${line}"
+                        else
+                            filtered="$line"
+                        fi
+                    fi
+                done <<< "$raw"
+                raw="$filtered"
+            fi
+            # If handle never posted, return all messages (raw unchanged)
+        fi
+
+        # Apply --last filter
+        if [[ -n "$last_n" ]]; then
+            raw=$(echo "$raw" | tail -n "$last_n")
+        fi
+
+        # Decode and print
+        if [[ -n "$raw" ]]; then
+            while IFS= read -r line; do
+                [[ -z "$line" ]] && continue
+                local decoded
+                decoded=$(echo "$line" | base64 -d 2>/dev/null) || {
+                    echo "[corrupt message]" >&2
+                    continue
+                }
+                echo "$decoded"
+            done <<< "$raw"
+        fi
+
+    ) 200>"$lf"
+
+    return 0
+}
+
+cmd_poll() {
+    local chat_file="${1:-}"
+    local handle="${2:-}"
+    shift 2 2>/dev/null || true
+
+    if [[ -z "$chat_file" ]] || [[ -z "$handle" ]]; then
+        echo "Error: poll requires <file> <handle>" >&2
+        echo "Usage: nbs-chat poll <file> <handle> --timeout=N" >&2
+        return 4
+    fi
+
+    assert_file_exists "$chat_file"
+    assert_is_chat_file "$chat_file"
+
+    local timeout=30
+
+    # Parse options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --timeout=*)
+                timeout="${1#--timeout=}"
+                shift
+                ;;
+            *)
+                echo "Error: Unknown option: $1" >&2
+                return 4
+                ;;
+        esac
+    done
+
+    local lf
+    lf=$(lock_file "$chat_file")
+
+    # Get initial message count
+    # Use flock command form (not fd form) for reliability in loops
+    local initial_count
+    initial_count=$(flock -x "$lf" bash -c "
+        raw=\$(sed -n '/^---\$/,\$ p' '$chat_file' | tail -n +2)
+        if [[ -z \"\$raw\" ]]; then echo 0; else echo \"\$raw\" | grep -c '.' || echo 0; fi
+    ")
+
+    local elapsed=0
+
+    while [[ $elapsed -lt $timeout ]]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+
+        # Check for new messages under lock
+        local current_count
+        current_count=$(flock -x "$lf" bash -c "
+            raw=\$(sed -n '/^---\$/,\$ p' '$chat_file' | tail -n +2)
+            if [[ -z \"\$raw\" ]]; then echo 0; else echo \"\$raw\" | grep -c '.' || echo 0; fi
+        ")
+
+        if [[ $current_count -gt $initial_count ]]; then
+            # New messages exist — read and filter under lock
+            local new_count=$((current_count - initial_count))
+
+            local poll_output
+            poll_output=$(flock -x "$lf" bash -c "
+                raw=\$(sed -n '/^---\$/,\$ p' '$chat_file' | tail -n +2 | tail -n $new_count)
+                has_other=false
+                while IFS= read -r line; do
+                    [[ -z \"\$line\" ]] && continue
+                    decoded=\$(echo \"\$line\" | base64 -d 2>/dev/null) || continue
+                    if echo \"\$decoded\" | grep -q '^${handle}: '; then
+                        continue
+                    fi
+                    echo \"\$decoded\"
+                    has_other=true
+                done <<< \"\$raw\"
+                if [[ \"\$has_other\" == true ]]; then
+                    exit 0
+                else
+                    exit 1
+                fi
+            ")
+
+            local rc=$?
+            if [[ $rc -eq 0 ]]; then
+                echo "$poll_output"
+                return 0
+            fi
+
+            # New messages were all from self — update initial count and continue
+            initial_count=$current_count
+        fi
+    done
+
+    echo "Timeout: no new messages after ${timeout}s" >&2
+    return 3
+}
+
+cmd_participants() {
+    local chat_file="${1:-}"
+
+    if [[ -z "$chat_file" ]]; then
+        echo "Error: participants requires <file>" >&2
+        echo "Usage: nbs-chat participants <file>" >&2
+        return 4
+    fi
+
+    assert_file_exists "$chat_file"
+    assert_is_chat_file "$chat_file"
+
+    local lf
+    lf=$(lock_file "$chat_file")
+
+    (
+        flock -x 200
+
+        local raw
+        raw=$(read_raw_messages "$chat_file")
+
+        if [[ -z "$raw" ]]; then
+            echo "(no messages)"
+            exit 0
+        fi
+
+        # Count messages per handle using associative array
+        declare -A counts
+
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            local decoded
+            decoded=$(echo "$line" | base64 -d 2>/dev/null) || continue
+            # Extract handle (everything before first ": ")
+            local msg_handle
+            msg_handle=$(echo "$decoded" | sed 's/: .*//')
+            if [[ -n "$msg_handle" ]]; then
+                counts["$msg_handle"]=$(( ${counts["$msg_handle"]:-0} + 1 ))
+            fi
+        done <<< "$raw"
+
+        # Print sorted by handle name
+        for h in $(echo "${!counts[@]}" | tr ' ' '\n' | sort); do
+            printf "  %-25s %d messages\n" "$h" "${counts[$h]}"
+        done
+
+    ) 200>"$lf"
+
+    return 0
+}
+
+# --- Main dispatch ---
+
+case "${1:-}" in
+    create)
+        shift
+        cmd_create "$@"
+        ;;
+    send)
+        shift
+        cmd_send "$@"
+        ;;
+    read)
+        shift
+        cmd_read "$@"
+        ;;
+    poll)
+        shift
+        cmd_poll "$@"
+        ;;
+    participants)
+        shift
+        cmd_participants "$@"
+        ;;
+    help|--help|-h|"")
+        usage
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        echo "Run 'nbs-chat help' for usage" >&2
+        exit 4
+        ;;
+esac
