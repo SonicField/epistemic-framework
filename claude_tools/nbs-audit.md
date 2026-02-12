@@ -111,6 +111,17 @@ Tests where every dependency is mocked prove only that the mock behaves as expec
 **Anti-Pattern 7: No Runtime Verification**
 Long-running processes or services that lack health checks, invariant monitoring, or graceful degradation. Flag services or daemons that do not periodically verify internal state. Flag code that silently continues after an invariant violation rather than logging, alerting, and containing the corruption. After an invariant violation, the data is no longer trustworthy — the system must log full context, alert operators, contain the corruption, degrade to a safe mode, and recover or await intervention.
 
+**Anti-Pattern 8: Missing Dynamic Analysis**
+Code without dynamic analysis tooling is code whose runtime behaviour is unverified. Static checks (type systems, linters, compilation) are necessary but insufficient — they cannot catch use-after-free, data races, undefined behaviour, or input-dependent failures. Flag projects that lack build targets or CI stages for dynamic analysis appropriate to their language:
+
+- **C/C++**: AddressSanitizer (ASan), ThreadSanitizer (TSan), UndefinedBehaviourSanitizer (UBSan), Valgrind
+- **Rust**: Miri (for unsafe code), sanitizer builds, `cargo test` under ASan/TSan
+- **Python**: `pytest` with `-x` (fail fast), `python -X dev` mode, `faulthandler`, Hypothesis for property-based testing
+- **Concurrent code in any language**: a thread/race analysis tool (TSan, Go race detector, Helgrind)
+- **Code handling untrusted input**: fuzz testing (libFuzzer, AFL, cargo-fuzz, Atheris)
+
+The general principle: every class of runtime bug that static analysis cannot catch must have a corresponding dynamic analysis verb. If the project has no mechanism to detect memory errors, data races, or undefined behaviour at runtime, those bugs are invisible — and invisible bugs are the most dangerous kind.
+
 ## Your Task
 
 Read the source file. Produce a concise report listing ONLY concrete violations:

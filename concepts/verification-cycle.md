@@ -101,6 +101,22 @@ def test_with_real_database(test_db):
 
 Mock at system boundaries (external APIs you do not control) and at conversion boundaries during porting (where the mock proves the ported piece matches the original before fusing). Outside these two cases, test for real.
 
+## Dynamic Analysis
+
+Static checks — type systems, linters, compilation — are nouns. They describe what the code *should* be. Dynamic analysis tools are verbs. They observe what the code *actually does* at runtime.
+
+Every class of runtime bug that static analysis cannot catch must have a corresponding dynamic analysis verb. Examples by language:
+
+- **C/C++**: ASan (memory errors), TSan (data races), UBSan (undefined behaviour), Valgrind (leaks)
+- **Rust**: Miri (unsafe verification), sanitizer builds
+- **Python**: `pytest` with fail-fast, `python -X dev` mode, Hypothesis (property-based testing)
+- **Concurrent code**: thread/race analysis (TSan, Go race detector, Helgrind)
+- **Untrusted input**: fuzz testing (libFuzzer, AFL, cargo-fuzz, Atheris)
+
+If a project has no mechanism to detect memory errors, data races, or undefined behaviour at runtime, those bugs are invisible. Invisible bugs are the most dangerous kind — they compound silently until they manifest as data corruption or security vulnerabilities.
+
+Dynamic analysis is not optional hardening. It is a verification verb on the same level as testing and assertions.
+
 ## The Practical Question
 
 Before moving to the next step: what did I learn? Write it down. If you cannot articulate what you learned, you were not paying attention.
