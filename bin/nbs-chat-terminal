@@ -14,6 +14,8 @@
 #   Type /help for all commands.
 #   Type /exit or Ctrl-C to exit.
 #
+# New messages from others are displayed each time you press Enter.
+#
 # Exit codes:
 #   0 - Clean exit
 #   1 - General error
@@ -52,6 +54,8 @@ Controls:
   Type /edit on an empty line to compose in $EDITOR.
   Type /help for all commands.
   Type /exit or Ctrl-C to exit.
+
+New messages from others are displayed each time you press Enter.
 
 Example:
   nbs-chat create .nbs/chat/debug.chat
@@ -123,28 +127,15 @@ print_continuation() {
     echo -en "${DIM}...${RESET} "
 }
 
-# --- Shared state via file ---
-# Background poller and foreground input loop need to share the message count.
-# Bash background processes get a copy of variables, not a reference.
-# Use a temp file as shared state.
+# --- State ---
 
 STATE_DIR=$(mktemp -d)
-COUNT_FILE="$STATE_DIR/msg_count"
-
-POLL_PID=""
+MSG_COUNT=0
 
 # --- Cleanup ---
 
 cleanup() {
-    # Kill background poller if running
-    if [[ -n "$POLL_PID" ]] && kill -0 "$POLL_PID" 2>/dev/null; then
-        kill "$POLL_PID" 2>/dev/null
-        wait "$POLL_PID" 2>/dev/null
-    fi
-
     rm -rf "$STATE_DIR"
-
-    # Restore terminal
     stty echo 2>/dev/null
     echo ""
     echo -e "${DIM}Left chat.${RESET}"
@@ -152,102 +143,54 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
+# --- Check and display new messages ---
+# Called in the foreground loop each time the user presses Enter.
+# No background poller touches the screen — no clobbering.
+
+check_new_messages() {
+    local current
+    current=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null)
+    local current_count=0
+    if [[ -n "$current" ]]; then
+        current_count=$(echo "$current" | grep -c '.' || true)
+    fi
+
+    if [[ $current_count -gt $MSG_COUNT ]]; then
+        local new_msgs
+        new_msgs=$("$NBS_CHAT" read "$CHAT_FILE" --last=$((current_count - MSG_COUNT)) 2>/dev/null)
+
+        MSG_COUNT=$current_count
+
+        if [[ -n "$new_msgs" ]]; then
+            while IFS= read -r line; do
+                [[ -z "$line" ]] && continue
+
+                local line_handle
+                line_handle="${line%%: *}"
+
+                # Skip own messages — already displayed when sent
+                if [[ "$line_handle" == "$HANDLE" ]]; then
+                    continue
+                fi
+
+                format_message "$line"
+            done <<< "$new_msgs"
+        fi
+    fi
+}
+
 # --- Initial display ---
 
 # Show existing messages
 EXISTING=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null)
-LAST_MSG_COUNT=0
 if [[ -n "$EXISTING" ]]; then
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         format_message "$line"
     done <<< "$EXISTING"
-    LAST_MSG_COUNT=$(echo "$EXISTING" | grep -c '.' || true)
+    MSG_COUNT=$(echo "$EXISTING" | grep -c '.' || true)
     echo ""
 fi
-
-# Write initial count to shared state
-echo "$LAST_MSG_COUNT" > "$COUNT_FILE"
-
-# --- Background poller ---
-
-poll_loop() {
-    local nbs_chat="$1"
-    local chat_file="$2"
-    local my_handle="$3"
-    local count_file="$4"
-
-    # Re-declare colour state for the child process
-    local -A child_colours
-    local child_colour_idx=0
-    local child_colours_arr=(
-        "38;5;39" "38;5;208" "38;5;41" "38;5;213"
-        "38;5;226" "38;5;87" "38;5;196" "38;5;147"
-    )
-
-    while true; do
-        sleep 1
-
-        local known_count
-        known_count=$(cat "$count_file" 2>/dev/null || echo 0)
-
-        local current
-        current=$("$nbs_chat" read "$chat_file" 2>/dev/null)
-        local current_count=0
-        if [[ -n "$current" ]]; then
-            current_count=$(echo "$current" | grep -c '.' || true)
-        fi
-
-        if [[ $current_count -gt $known_count ]]; then
-            # Get only the new messages
-            local new_msgs
-            new_msgs=$("$nbs_chat" read "$chat_file" --last=$((current_count - known_count)) 2>/dev/null)
-
-            # Update shared count BEFORE printing to prevent race
-            echo "$current_count" > "$count_file"
-
-            if [[ -n "$new_msgs" ]]; then
-                # Filter out own messages (already displayed by the input loop)
-                local has_output=false
-
-                # Clear current input line
-                echo -en "\r\033[2K"
-
-                while IFS= read -r line; do
-                    [[ -z "$line" ]] && continue
-
-                    local line_handle
-                    line_handle="${line%%: *}"
-
-                    # Skip own messages — the input loop already displayed them
-                    if [[ "$line_handle" == "$my_handle" ]]; then
-                        continue
-                    fi
-
-                    # Colour assignment for child process
-                    local colour
-                    if [[ -z "${child_colours[$line_handle]+x}" ]]; then
-                        child_colours["$line_handle"]="${child_colours_arr[$child_colour_idx]}"
-                        child_colour_idx=$(( (child_colour_idx + 1) % ${#child_colours_arr[@]} ))
-                    fi
-                    colour="${child_colours[$line_handle]}"
-
-                    echo -e "  \033[${colour}m\033[1m${line_handle}\033[0m: ${line#*: }"
-                    has_output=true
-                done <<< "$new_msgs"
-
-                if [[ "$has_output" == true ]]; then
-                    # Redraw prompt
-                    echo -en "\033[1m${my_handle}>\033[0m "
-                fi
-            fi
-        fi
-    done
-}
-
-# Start background poller
-poll_loop "$NBS_CHAT" "$CHAT_FILE" "$HANDLE" "$COUNT_FILE" &
-POLL_PID=$!
 
 # --- Editor mode ---
 
@@ -257,8 +200,7 @@ open_editor() {
     local editor="${EDITOR:-vim}"
     EDIT_TMPFILE=$(mktemp "${STATE_DIR}/edit.XXXXXX")
 
-    # Run editor on /dev/tty so it gets the real terminal,
-    # not the command substitution's captured stdout
+    # Run editor on /dev/tty so it gets the real terminal
     "$editor" "$EDIT_TMPFILE" </dev/tty >/dev/tty 2>/dev/tty
 }
 
@@ -279,6 +221,9 @@ read_editor_result() {
 INPUT_BUFFER=""
 
 while true; do
+    # Check for new messages before showing prompt
+    check_new_messages
+
     if [[ -z "$INPUT_BUFFER" ]]; then
         print_prompt
     else
@@ -291,23 +236,12 @@ while true; do
 
         # Check for /edit command (only on first line of buffer)
         if [[ -z "$INPUT_BUFFER" ]] && [[ "$user_input" == "/edit" ]]; then
-            # Pause poller so it doesn't clobber the editor display
-            if [[ -n "$POLL_PID" ]] && kill -0 "$POLL_PID" 2>/dev/null; then
-                kill "$POLL_PID" 2>/dev/null
-                wait "$POLL_PID" 2>/dev/null
-            fi
-
             open_editor
             msg=$(read_editor_result)
-
-            # Restart poller
-            poll_loop "$NBS_CHAT" "$CHAT_FILE" "$HANDLE" "$COUNT_FILE" &
-            POLL_PID=$!
             if [[ -n "$msg" ]]; then
                 if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$msg" 2>/dev/null; then
                     format_message "${HANDLE}: ${msg}"
-                    current_count=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
-                    echo "$current_count" > "$COUNT_FILE"
+                    MSG_COUNT=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
                 else
                     echo -e "  ${DIM}(send failed)${RESET}"
                 fi
@@ -348,8 +282,7 @@ while true; do
         if [[ -n "$INPUT_BUFFER" ]] && [[ -z "$user_input" ]]; then
             if "$NBS_CHAT" send "$CHAT_FILE" "$HANDLE" "$INPUT_BUFFER" 2>/dev/null; then
                 format_message "${HANDLE}: ${INPUT_BUFFER}"
-                current_count=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
-                echo "$current_count" > "$COUNT_FILE"
+                MSG_COUNT=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null | grep -c '.' || true)
             else
                 echo -e "  ${DIM}(send failed)${RESET}"
             fi
