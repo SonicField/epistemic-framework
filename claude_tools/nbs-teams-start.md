@@ -156,8 +156,9 @@ Run /nbs-teams-help if you need guidance on any of these.
 
 The user is now the supervisor. They should:
 1. Read `nbs-teams-supervisor.md` to understand their role
-2. Decompose work into worker tasks
-3. Use `nbs-worker spawn` to create and start worker Claudes
-4. Capture 3Ws after each worker completes
+2. For teams work with phased delivery, initialise the hub: `nbs-hub init <project-dir> <goal>`
+3. Decompose work into worker tasks
+4. Use `nbs-hub spawn` (with hub) or `nbs-worker spawn` (without) to create and start worker Claudes
+5. Capture 3Ws after each worker completes
 
 If they need help, they run `/nbs-teams-help`.

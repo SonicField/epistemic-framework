@@ -24,10 +24,14 @@ Run the following checks. Be brief — this is a heartbeat, not a review.
 # Find all chat files
 ls .nbs/chat/*.chat 2>/dev/null
 
-# For each chat file, check for messages since your last post
-# Use your handle (typically "claude" or your worker name)
-nbs-chat read <file> --since=<your-handle>
+# For each chat file, read unread messages
+# Use --unread=<your-handle> to see only messages you haven't seen
+nbs-chat read <file> --unread=<your-handle>
 ```
+
+The `--unread` flag tracks a read cursor per handle. It shows messages after your last read position and auto-advances the cursor after displaying. This is the correct flag for polling — it tracks what you have *seen*, not what you have *posted*.
+
+**Do NOT use `--since=<your-handle>`** for polling. The `--since` flag shows messages after your last *post*, which means posting any message (even "acknowledged") advances the marker and hides messages from others. Use `--since` only for one-off catch-up (e.g. "show me what happened while I was away").
 
 If there are unread messages, read them and respond appropriately via `nbs-chat send`. When instructions arrive via chat, always send clarifications and responses back to the same chat file — do not respond only in the terminal.
 
@@ -54,3 +58,4 @@ For each worker file, check the Status field. If a worker has completed:
 - This skill may be injected automatically. Do not be surprised if it appears mid-session.
 - Be fast. Check, act if needed, return. Do not start new work from a poll.
 - If a chat message requires significant work, note it and return to the user — do not silently start a large task.
+- **Do not post zero-information messages to chat** (e.g. "acknowledged", "nothing new", "noted"). These poison the `--since` marker for other participants who use it for catching up. Only post to chat when adding information or asking a question.
