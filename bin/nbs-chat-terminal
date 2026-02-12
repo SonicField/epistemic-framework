@@ -97,19 +97,6 @@ get_colour() {
 
 # --- Display functions ---
 
-print_header() {
-    local cols
-    cols=$(tput cols 2>/dev/null || echo 80)
-    local bar
-    bar=$(printf '─%.0s' $(seq 1 "$cols"))
-
-    echo -e "${DIM}${bar}${RESET}"
-    echo -e "${BOLD} nbs-chat-terminal${RESET}  ${DIM}file:${RESET} $(basename "$CHAT_FILE")  ${DIM}handle:${RESET} $HANDLE"
-    echo -e "${DIM}  Enter = new line  |  blank line = send  |  /help for commands${RESET}"
-    echo -e "${DIM}${bar}${RESET}"
-    echo ""
-}
-
 format_message() {
     local msg="$1"
     # Extract handle and content
@@ -166,9 +153,6 @@ cleanup() {
 trap cleanup INT TERM EXIT
 
 # --- Initial display ---
-
-clear
-print_header
 
 # Show existing messages
 EXISTING=$("$NBS_CHAT" read "$CHAT_FILE" 2>/dev/null)
