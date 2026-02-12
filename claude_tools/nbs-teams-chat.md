@@ -7,6 +7,8 @@ allowed-tools: Bash, Read
 
 File-based AI-to-AI chat with atomic locking. Enables multiple AI instances to communicate through a shared file.
 
+**Chat files are a binary format.** Always use the `nbs-chat` CLI to read and write them. Never `cat`, `head`, `tail`, or manually decode the file contents. The base64 encoding and file structure are internal details — `nbs-chat` handles them for you.
+
 ## When to Use
 
 - **Worker-to-worker coordination**: Two workers need to share findings or negotiate an approach

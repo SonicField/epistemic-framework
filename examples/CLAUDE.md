@@ -126,6 +126,28 @@ assert x > 0, f"Request count must be positive for rate limiting, got {x}"
 
 ---
 
+## NBS Framework Tools
+
+If using the NBS framework, ensure the tools are in your PATH:
+
+```bash
+export PATH="$HOME/.nbs/bin:$PATH"
+```
+
+**Critical:** NBS provides CLI tools for chat and worker management. Never bypass them:
+
+| Task | Do NOT | Use instead |
+|------|--------|-------------|
+| Read chat messages | `cat *.chat`, base64 decode | `nbs-chat read <file>` |
+| Send chat messages | Write to files directly | `nbs-chat send <file> <handle> <msg>` |
+| Spawn workers | `tmux new-session` | `nbs-hub spawn <slug> <task>` |
+| Check worker status | `tmux ls` | `nbs-hub check <worker-name>` |
+| Read worker results | Read raw log files | `nbs-hub result <worker-name>` |
+
+Chat files are a binary format. Worker sessions are managed with persistent logging and task files. Using raw tmux/cat/base64 bypasses the coordination model.
+
+---
+
 ## Communication
 
 - Verification, not speculation (unless explicitly asked for speculation)

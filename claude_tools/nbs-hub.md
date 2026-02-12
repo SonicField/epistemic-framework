@@ -82,6 +82,8 @@ nbs-hub spawn <slug> <task-description>
 
 Spawn a worker via `nbs-worker`. The hub wraps `nbs-worker spawn` and adds enforcement.
 
+**`nbs-hub spawn` creates the tmux session, task file, and Claude instance for you.** Do not create tmux sessions directly. Do not use `tmux new-session` or `tmux send-keys`. The hub and `nbs-worker` handle all of this.
+
 **Audit gate:** If an audit is required (3 workers completed since last self-check), the spawn is **refused** with exit code 3. You must submit `nbs-hub audit <file>` before proceeding.
 
 Returns the worker name (e.g., `parser-a3f1`).
