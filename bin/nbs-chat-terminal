@@ -11,7 +11,8 @@
 #   Type a message and press Enter to add a line.
 #   Press Enter on an empty line to send the message.
 #   Type /edit on an empty line to compose in $EDITOR.
-#   Ctrl-C to exit.
+#   Type /help for all commands.
+#   Type /exit or Ctrl-C to exit.
 #
 # Exit codes:
 #   0 - Clean exit
@@ -49,7 +50,8 @@ Controls:
   Type a message and press Enter to add a line.
   Press Enter on an empty line to send the message.
   Type /edit on an empty line to compose in $EDITOR.
-  Ctrl-C to exit.
+  Type /help for all commands.
+  Type /exit or Ctrl-C to exit.
 
 Example:
   nbs-chat create .nbs/chat/debug.chat
@@ -103,7 +105,7 @@ print_header() {
 
     echo -e "${DIM}${bar}${RESET}"
     echo -e "${BOLD} nbs-chat-terminal${RESET}  ${DIM}file:${RESET} $(basename "$CHAT_FILE")  ${DIM}handle:${RESET} $HANDLE"
-    echo -e "${DIM}  Enter = new line  |  blank line = send  |  /edit = open editor${RESET}"
+    echo -e "${DIM}  Enter = new line  |  blank line = send  |  /help for commands${RESET}"
     echo -e "${DIM}${bar}${RESET}"
     echo ""
 }
@@ -319,6 +321,27 @@ while true; do
                 echo -e "  ${DIM}(empty — not sent)${RESET}"
             fi
             INPUT_BUFFER=""
+            continue
+        fi
+
+        # Check for /exit command
+        if [[ -z "$INPUT_BUFFER" ]] && [[ "$user_input" == "/exit" ]]; then
+            exit 0
+        fi
+
+        # Check for /help command
+        if [[ -z "$INPUT_BUFFER" ]] && [[ "$user_input" == "/help" ]]; then
+            echo ""
+            echo -e "${BOLD}Commands:${RESET}"
+            echo -e "  ${DIM}/edit${RESET}   Open \$EDITOR to compose a message"
+            echo -e "  ${DIM}/help${RESET}   Show this help"
+            echo -e "  ${DIM}/exit${RESET}   Leave the chat"
+            echo ""
+            echo -e "${BOLD}Input:${RESET}"
+            echo -e "  ${DIM}Enter${RESET}        Add a line (continuation prompt: ...)"
+            echo -e "  ${DIM}Blank line${RESET}   Send the message"
+            echo -e "  ${DIM}Ctrl-C${RESET}       Exit"
+            echo ""
             continue
         fi
 
