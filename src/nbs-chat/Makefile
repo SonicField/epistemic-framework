@@ -24,17 +24,25 @@ TERM_SRCS = terminal.c
 TERM_OBJS = $(TERM_SRCS:.c=.o)
 TERM_TARGET = nbs-chat-terminal
 
+# nbs-chat-remote (SSH proxy, no lib dependencies)
+REMOTE_SRCS = remote.c
+REMOTE_OBJS = $(REMOTE_SRCS:.c=.o)
+REMOTE_TARGET = nbs-chat-remote
+
 # NDEBUG verification
 ASSERT_CHECK = assert_check
 
 .PHONY: all clean install debug asan test test-debug test-asan test-all
 
-all: $(CLI_TARGET) $(TERM_TARGET) $(ASSERT_CHECK)
+all: $(CLI_TARGET) $(TERM_TARGET) $(REMOTE_TARGET) $(ASSERT_CHECK)
 
 $(CLI_TARGET): $(CLI_OBJS) $(LIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(TERM_TARGET): $(TERM_OBJS) $(LIB_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(REMOTE_TARGET): $(REMOTE_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(ASSERT_CHECK): assert_check.c
@@ -47,6 +55,7 @@ install: all
 	mkdir -p $(BIN_DIR)
 	cp $(CLI_TARGET) $(BIN_DIR)/
 	cp $(TERM_TARGET) $(BIN_DIR)/
+	cp $(REMOTE_TARGET) $(BIN_DIR)/
 
 # --- Build modes ---
 
@@ -84,6 +93,7 @@ terminal.o: terminal.c chat_file.h
 chat_file.o: chat_file.c chat_file.h base64.h lock.h
 base64.o: base64.c base64.h chat_file.h
 lock.o: lock.c lock.h chat_file.h
+remote.o: remote.c
 
 clean:
-	rm -f $(LIB_OBJS) $(CLI_OBJS) $(TERM_OBJS) $(CLI_TARGET) $(TERM_TARGET) $(ASSERT_CHECK)
+	rm -f $(LIB_OBJS) $(CLI_OBJS) $(TERM_OBJS) $(REMOTE_OBJS) $(CLI_TARGET) $(TERM_TARGET) $(REMOTE_TARGET) $(ASSERT_CHECK)
